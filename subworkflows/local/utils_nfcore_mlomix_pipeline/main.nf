@@ -109,6 +109,7 @@ workflow PIPELINE_INITIALISATION {
     //
     def parsed_rows = samplesheetToList(params.input, "${projectDir}/assets/schema_input.json").collect { row -> row[0] }
     def mode_info = validateInputSamplesheetModes(parsed_rows)
+    log.info "Detected input modes: run_gex=${mode_info.run_gex}, run_dnam=${mode_info.run_dnam}, use_precomputed_dnam=${mode_info.use_precomputed_dnam}"
 
     if (mode_info.run_gex && !params.genome) {
         error("GEX input was detected but '--genome' is missing. Please provide a supported genome key (e.g. --genome GRCh38).")
@@ -184,6 +185,9 @@ workflow PIPELINE_INITIALISATION {
 
     ch_annotation_version = channel.value(params.annotation_version)
     ch_random_seed = channel.value(params.random_seed)
+    ch_run_gex = channel.value(mode_info.run_gex)
+    ch_run_dnam = channel.value(mode_info.run_dnam)
+    ch_use_precomputed_dnam = channel.value(mode_info.use_precomputed_dnam)
 
     emit:
     gex_samplesheet       = ch_gex_samplesheet
@@ -195,6 +199,9 @@ workflow PIPELINE_INITIALISATION {
     dnam_pvals            = ch_dnam_pvals
     annotation_version    = ch_annotation_version
     random_seed           = ch_random_seed
+    run_gex               = ch_run_gex
+    run_dnam              = ch_run_dnam
+    use_precomputed_dnam  = ch_use_precomputed_dnam
     versions              = ch_versions
 }
 

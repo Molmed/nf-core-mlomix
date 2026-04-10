@@ -22,16 +22,16 @@ workflow DNAM {
     ch_samplesheet
     ch_precomputed_beta_matrix
     ch_precomputed_pvals
+    ch_use_precomputed_dnam
 
     main:
 
     ch_versions = channel.empty()
+    def use_precomputed = ch_use_precomputed_dnam.val
 
     //
     // MODULE: Preprocess methylation array data with minfi
     //
-    def use_precomputed = params.use_precomputed_dnam
-
     def ch_beta_matrix
     def ch_detection_pvals
 

@@ -26,6 +26,9 @@ workflow MLOMIX {
     genome
     annotation_version
     random_seed
+    run_gex
+    run_dnam
+    use_precomputed_dnam
 
     main:
 
@@ -33,7 +36,10 @@ workflow MLOMIX {
     ch_gex_transposed = channel.empty()
     ch_classes_tsv = channel.empty()
 
-    if (params.run_gex) {
+    def run_gex_val = run_gex.val
+    def run_dnam_val = run_dnam.val
+
+    if (run_gex_val) {
         GEX_REF_PREPROCESSOR (
             genome,
             annotation_version
@@ -54,11 +60,12 @@ workflow MLOMIX {
         ch_classes_tsv = GEX.out.classes_tsv
     }
 
-    if (params.run_dnam) {
+    if (run_dnam_val) {
         DNAM (
             ch_dnam_samplesheet,
             ch_dnam_beta_matrix,
-            ch_dnam_pvals
+            ch_dnam_pvals,
+            use_precomputed_dnam
         )
         ch_versions = ch_versions.mix(DNAM.out.versions)
     }

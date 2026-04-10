@@ -31,35 +31,6 @@ include { getGenomeAttribute      } from './subworkflows/local/utils_nfcore_mlom
 //   from igenomes.config using `--genome`
 params.fasta = getGenomeAttribute('fasta')
 
-def inferRunFlags(String inputFile) {
-    def lines = new File(inputFile).readLines().findAll { line -> line?.trim() }
-    if (!lines) {
-        return [run_gex: false, run_dnam: false]
-    }
-
-    def headers = lines[0].split(',', -1).collect { header -> header.trim() }
-    def run_gex = false
-    def run_dnam = false
-
-    lines.drop(1).each { line ->
-        def values = line.split(',', -1)
-        def row = [:]
-
-        headers.eachWithIndex { header, index ->
-            row[header] = index < values.size() ? values[index].trim() : ''
-        }
-
-        if (row.gex_feature_counts_file) {
-            run_gex = true
-        }
-        if (row.dnam_beta_matrix_file || row.dnam_pvals_file || row.sentrix_id || row.sentrix_position || row.idats_dir) {
-            run_dnam = true
-        }
-    }
-
-    return [run_gex: run_gex, run_dnam: run_dnam]
-}
-
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     NAMED WORKFLOWS FOR PIPELINE
@@ -82,6 +53,9 @@ workflow NFCORE_MLOMIX {
     genome
     annotation_version
     random_seed
+    run_gex
+    run_dnam
+    use_precomputed_dnam
 
     main:
 
@@ -98,7 +72,10 @@ workflow NFCORE_MLOMIX {
         ch_dnam_pvals,
         genome,
         annotation_version,
-        random_seed
+        random_seed,
+        run_gex,
+        run_dnam,
+        use_precomputed_dnam
     )
     emit:
     versions = MLOMIX.out.versions
@@ -112,18 +89,6 @@ workflow NFCORE_MLOMIX {
 workflow {
 
     main:
-    def mode_info = [
-        run_gex: false,
-        run_dnam: false,
-    ]
-
-    if (params.input) {
-        mode_info = inferRunFlags(params.input)
-    }
-
-    params.run_gex = mode_info.run_gex
-    params.run_dnam = mode_info.run_dnam
-
     //
     // SUBWORKFLOW: Run initialisation tasks
     //
@@ -152,7 +117,10 @@ workflow {
         PIPELINE_INITIALISATION.out.dnam_pvals,
         params.genome,
         PIPELINE_INITIALISATION.out.annotation_version,
-        PIPELINE_INITIALISATION.out.random_seed
+        PIPELINE_INITIALISATION.out.random_seed,
+        PIPELINE_INITIALISATION.out.run_gex,
+        PIPELINE_INITIALISATION.out.run_dnam,
+        PIPELINE_INITIALISATION.out.use_precomputed_dnam
     )
     //
     // SUBWORKFLOW: Run completion tasks
