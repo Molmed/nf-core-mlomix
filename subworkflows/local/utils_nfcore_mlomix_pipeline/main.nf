@@ -270,7 +270,10 @@ def validateInputSamplesheetModes(rows) {
 
     def run_gex = rows.any { row -> row.gex_feature_counts_file }
 
-    def dnam_rows = rows.findAll { row -> !row.gex_feature_counts_file }
+    // A sample can carry both modalities; DNAM detection must be based on DNAM columns, not on absence of GEX.
+    def dnam_rows = rows.findAll { row ->
+        row.dnam_beta_matrix_file || row.dnam_pvals_file || row.sentrix_id || row.sentrix_position || row.idats_dir
+    }
     def run_dnam = !dnam_rows.isEmpty()
 
     // Validate that each DNAM sample uses exactly one mode (per-sample validation)
