@@ -116,8 +116,8 @@ workflow {
         PIPELINE_INITIALISATION.out.dnam_beta_matrix,
         PIPELINE_INITIALISATION.out.dnam_pvals,
         params.genome,
-        PIPELINE_INITIALISATION.out.annotation_version,
-        PIPELINE_INITIALISATION.out.random_seed,
+        params.annotation_version,
+        params.random_seed,
         PIPELINE_INITIALISATION.out.run_gex,
         PIPELINE_INITIALISATION.out.run_dnam,
         PIPELINE_INITIALISATION.out.use_precomputed_dnam

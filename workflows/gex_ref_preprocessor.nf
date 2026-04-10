@@ -24,7 +24,9 @@ workflow GEX_REF_PREPROCESSOR {
     main:
 
     ch_versions = channel.empty()
-    full_genome_name = "Homo_sapiens.${genome}.${annotation_version}"
+    ch_full_genome_name = genome
+        .combine(annotation_version)
+        .map { g, ann -> "Homo_sapiens.${g}.${ann}" }
 
     //
     // MODULE: Download GTF file
@@ -41,7 +43,7 @@ workflow GEX_REF_PREPROCESSOR {
     // TODO: Rename gtf_file to gtf
     FLATTEN_GTF (
         DOWNLOAD_GTF.out.gtf_file,
-        full_genome_name
+        ch_full_genome_name
     )
     ch_versions = ch_versions.mix(FLATTEN_GTF.out.versions.first())
 
@@ -51,7 +53,7 @@ workflow GEX_REF_PREPROCESSOR {
     PARSE_GTF (
         DOWNLOAD_GTF.out.gtf_file,
         FLATTEN_GTF.out.saf,
-        full_genome_name
+        ch_full_genome_name
     )
     ch_versions = ch_versions.mix(PARSE_GTF.out.versions.first())
 
@@ -60,7 +62,7 @@ workflow GEX_REF_PREPROCESSOR {
     //
     FILTER_ANNOTATIONS (
         PARSE_GTF.out.annotations,
-        full_genome_name
+        ch_full_genome_name
     )
     ch_versions = ch_versions.mix(FILTER_ANNOTATIONS.out.versions.first())
 
