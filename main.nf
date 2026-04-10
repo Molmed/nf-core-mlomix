@@ -101,6 +101,21 @@ workflow {
     //
     // WORKFLOW: Run main workflow
     //
+    PIPELINE_INITIALISATION.out.run_gex
+        .subscribe { params.run_gex = it }
+
+    PIPELINE_INITIALISATION.out.run_dnam
+        .subscribe { params.run_dnam = it }
+
+    PIPELINE_INITIALISATION.out.use_precomputed_dnam
+        .subscribe { params.use_precomputed_dnam = it }
+
+    PIPELINE_INITIALISATION.out.precomputed_beta
+        .subscribe { params.precomputed_dnam_beta_matrix = it }
+
+    PIPELINE_INITIALISATION.out.precomputed_pvals
+        .subscribe { params.precomputed_dnam_pvals = it }
+
     NFCORE_MLOMIX (
         PIPELINE_INITIALISATION.out.gex_samplesheet,
         PIPELINE_INITIALISATION.out.datasets,

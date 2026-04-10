@@ -105,7 +105,7 @@ workflow PIPELINE_INITIALISATION {
     ch_versions = ch_versions.mix(CLASS_REPORTER.out.versions)
 
     //
-    // Create channels from combined GEX + DNAM samplesheet
+    // Create channels from combined GEX + DNAM samplesheet and validate modes
     //
     channel
         .fromList(samplesheetToList(params.input, "${projectDir}/assets/schema_input.json"))
@@ -113,14 +113,18 @@ workflow PIPELINE_INITIALISATION {
         .collect()
         .map { rows ->
             def mode_info = validateInputSamplesheetModes(rows)
-            params.run_gex = mode_info.run_gex
-            params.run_dnam = mode_info.run_dnam
-            params.use_precomputed_dnam = mode_info.use_precomputed_dnam
-            params.precomputed_dnam_beta_matrix = mode_info.precomputed_beta
-            params.precomputed_dnam_pvals = mode_info.precomputed_pvals
-            rows
+            [rows, mode_info]
         }
+        .set { ch_rows_and_mode_info }
+
+    // Extract rows and mode info into separate channels
+    ch_rows_and_mode_info
+        .map { rows_and_info -> rows_and_info[0] }
         .set { ch_rows }
+
+    ch_rows_and_mode_info
+        .map { rows_and_info -> rows_and_info[1] }
+        .set { ch_mode_info }
 
     ch_rows
         .flatMap { rows -> rows }
@@ -187,17 +191,43 @@ workflow PIPELINE_INITIALISATION {
     ch_annotation_version = channel.value(params.annotation_version)
     ch_random_seed = channel.value(params.random_seed)
 
+    // Create value channels from mode_info for use in downstream workflows
+    ch_mode_info
+        .map { info -> info.run_gex }
+        .set { ch_run_gex }
+
+    ch_mode_info
+        .map { info -> info.run_dnam }
+        .set { ch_run_dnam }
+
+    ch_mode_info
+        .map { info -> info.use_precomputed_dnam }
+        .set { ch_use_precomputed_dnam }
+
+    ch_mode_info
+        .map { info -> info.precomputed_beta }
+        .set { ch_precomputed_beta }
+
+    ch_mode_info
+        .map { info -> info.precomputed_pvals }
+        .set { ch_precomputed_pvals }
+
     emit:
-    gex_samplesheet  = ch_gex_samplesheet
-    datasets         = ch_datasets
-    batches          = ch_batches
-    classes          = ch_classes
-    dnam_samplesheet = ch_dnam_samplesheet
-    dnam_beta_matrix = ch_dnam_beta_matrix
-    dnam_pvals       = ch_dnam_pvals
-    annotation_version = ch_annotation_version
-    random_seed      = ch_random_seed
-    versions         = ch_versions
+    gex_samplesheet       = ch_gex_samplesheet
+    datasets              = ch_datasets
+    batches               = ch_batches
+    classes               = ch_classes
+    dnam_samplesheet      = ch_dnam_samplesheet
+    dnam_beta_matrix      = ch_dnam_beta_matrix
+    dnam_pvals            = ch_dnam_pvals
+    annotation_version    = ch_annotation_version
+    random_seed           = ch_random_seed
+    run_gex               = ch_run_gex
+    run_dnam              = ch_run_dnam
+    use_precomputed_dnam  = ch_use_precomputed_dnam
+    precomputed_beta      = ch_precomputed_beta
+    precomputed_pvals     = ch_precomputed_pvals
+    versions              = ch_versions
 }
 
 /*
