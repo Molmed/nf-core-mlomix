@@ -61,12 +61,31 @@ nextflow_pipeline {
         }
     }
 
-    test("Invalid mixed DNAM mode (should fail)") {
+    test("Mixed: GEX + DNAM-precomputed + DNAM-IDAT (valid)") {
 
         when {
             params {
                 outdir = "$outputDir"
-                input = 'tests/samplesheet_dnam_mixed_invalid.csv'
+                input = 'tests/samplesheet_mixed_all_modes.csv'
+                run_gex = true
+                run_dnam = true
+                annotation_version = 'v107'
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.success }
+            )
+        }
+    }
+
+    test("Invalid: single sample mixing DNAM modes (should fail)") {
+
+        when {
+            params {
+                outdir = "$outputDir"
+                input = 'tests/samplesheet_invalid_single_sample_mixed.csv'
                 run_gex = false
                 run_dnam = true
             }
@@ -75,7 +94,7 @@ nextflow_pipeline {
         then {
             assertAll(
                 { assert workflow.failed },
-                { assert workflow.stderr.contains("different dnam modes") || workflow.stderr.contains("DNAM") }
+                { assert workflow.stderr.contains("mixes precomputed and IDAT modes") }
             )
         }
     }

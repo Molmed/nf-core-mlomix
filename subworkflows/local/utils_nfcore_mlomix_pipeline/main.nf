@@ -273,39 +273,51 @@ def validateInputSamplesheetModes(rows) {
     def dnam_rows = rows.findAll { row -> !row.gex_feature_counts_file }
     def run_dnam = !dnam_rows.isEmpty()
 
+    // Validate that each DNAM sample uses exactly one mode (per-sample validation)
+    dnam_rows.each { row ->
+        def has_precomputed = row.dnam_beta_matrix_file || row.dnam_pvals_file
+        def has_idat = row.sentrix_id || row.sentrix_position || row.idats_dir
+
+        // Check for incomplete precomputed mode
+        if ((row.dnam_beta_matrix_file && !row.dnam_pvals_file) || (!row.dnam_beta_matrix_file && row.dnam_pvals_file)) {
+            error("DNAM sample '${row.id}' has incomplete precomputed mode: both dnam_beta_matrix_file and dnam_pvals_file are required together.")
+        }
+
+        // Check for incomplete IDAT mode
+        if ((row.sentrix_id || row.sentrix_position || row.idats_dir) &&
+            (!row.sentrix_id || !row.sentrix_position || !row.idats_dir)) {
+            error("DNAM sample '${row.id}' has incomplete IDAT mode: sentrix_id, sentrix_position and idats_dir are all required together.")
+        }
+
+        // Check for mixing modes within a single sample
+        if (has_precomputed && has_idat) {
+            error("DNAM sample '${row.id}' mixes precomputed and IDAT modes. Each sample must use exactly one mode.")
+        }
+
+        // Check that sample has at least one DNAM mode
+        if (!has_precomputed && !has_idat) {
+            error("DNAM sample '${row.id}' has no valid DNAM input. Provide either (dnam_beta_matrix_file + dnam_pvals_file) or (sentrix_id + sentrix_position + idats_dir).")
+        }
+    }
+
+    // Mixed-mode support: allow different samples to use different DNAM modes in the same run
     def precomputed_rows = dnam_rows.findAll { row -> row.dnam_beta_matrix_file || row.dnam_pvals_file }
     def idat_rows = dnam_rows.findAll { row -> row.sentrix_id || row.sentrix_position || row.idats_dir }
 
-    if (run_dnam && !precomputed_rows.isEmpty() && !idat_rows.isEmpty()) {
-        error('DNAM inputs must use a single mode per run: either precomputed matrices or IDAT columns, not both.')
-    }
-
-    def use_precomputed_dnam = false
+    def use_precomputed_dnam = !precomputed_rows.isEmpty()
     def precomputed_beta = null
     def precomputed_pvals = null
 
     if (!precomputed_rows.isEmpty()) {
-        def invalid_precomputed = precomputed_rows.findAll { row -> !row.dnam_beta_matrix_file || !row.dnam_pvals_file }
-        if (!invalid_precomputed.isEmpty()) {
-            error("Each DNAM row with precomputed inputs must provide both dnam_beta_matrix_file and dnam_pvals_file. Offending sample: ${invalid_precomputed[0].id}")
-        }
-
+        // Expect single shared precomputed matrices across all precomputed DNAM rows
         def unique_beta = precomputed_rows.collect { row -> row.dnam_beta_matrix_file }.unique()
         def unique_pvals = precomputed_rows.collect { row -> row.dnam_pvals_file }.unique()
         if (unique_beta.size() != 1 || unique_pvals.size() != 1) {
-            error('Precomputed DNAM mode expects one shared dnam_beta_matrix_file and one shared dnam_pvals_file across all DNAM rows.')
+            error('All DNAM precomputed rows must reference the same dnam_beta_matrix_file and dnam_pvals_file.')
         }
 
-        use_precomputed_dnam = true
         precomputed_beta = unique_beta[0]
         precomputed_pvals = unique_pvals[0]
-    }
-
-    if (!idat_rows.isEmpty()) {
-        def invalid_idat = idat_rows.findAll { row -> !row.sentrix_id || !row.sentrix_position || !row.idats_dir }
-        if (!invalid_idat.isEmpty()) {
-            error("Each DNAM row in IDAT mode must provide sentrix_id, sentrix_position and idats_dir. Offending sample: ${invalid_idat[0].id}")
-        }
     }
 
     if (!run_gex && !run_dnam) {
