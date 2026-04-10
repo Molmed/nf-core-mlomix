@@ -32,7 +32,7 @@ workflow GEX {
     ch_dataset            // channel: datasets with sample names and paths
     ch_batches            // channel: batch file information
     ch_classes            // channel: classes from samplesheet metadata
-    ch_annotations        // channel: gene annotations from the REFPREPROCESSOR subworkflow
+    ch_annotations        // channel: gene annotations from the GEX_REF_PREPROCESSOR subworkflow
     random_seed           //  int: Random seed for reproducibility
 
     main:

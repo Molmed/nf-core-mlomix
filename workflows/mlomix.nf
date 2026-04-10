@@ -3,7 +3,7 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-include { REFPREPROCESSOR } from './refpreprocessor'
+include { GEX_REF_PREPROCESSOR } from './gex_ref_preprocessor'
 include { GEX } from './gex'
 include { DNAM } from './dnam'
 
@@ -34,7 +34,7 @@ workflow MLOMIX {
     ch_classes_tsv = channel.empty()
 
     if (params.run_gex) {
-        REFPREPROCESSOR (
+        GEX_REF_PREPROCESSOR (
             genome,
             annotation_version
         )
@@ -44,11 +44,11 @@ workflow MLOMIX {
             ch_datasets,
             ch_batches,
             ch_classes,
-            REFPREPROCESSOR.out.filtered_annotations,
+            GEX_REF_PREPROCESSOR.out.filtered_annotations,
             random_seed
         )
 
-        ch_versions = ch_versions.mix(REFPREPROCESSOR.out.versions)
+        ch_versions = ch_versions.mix(GEX_REF_PREPROCESSOR.out.versions)
         ch_versions = ch_versions.mix(GEX.out.versions)
         ch_gex_transposed = GEX.out.transposed_csv
         ch_classes_tsv = GEX.out.classes_tsv

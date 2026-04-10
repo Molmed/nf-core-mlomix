@@ -15,7 +15,7 @@ include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow REFPREPROCESSOR {
+workflow GEX_REF_PREPROCESSOR {
 
     take:
     genome             //  string: Version of the genome to use, e.g. 'GRCh38' or 'hg38'
@@ -70,7 +70,7 @@ workflow REFPREPROCESSOR {
     softwareVersionsToYAML(ch_versions)
         .collectFile(
             storeDir: "${params.outdir}/pipeline_info",
-            name: 'nf_core_'  +  'refpreprocessor_software_'  + 'versions.yml',
+            name: 'nf_core_'  +  'gex_ref_preprocessor_software_'  + 'versions.yml',
             sort: true,
             newLine: true
         )
