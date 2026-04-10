@@ -13,21 +13,94 @@
                 "errorMessage": "Sample name must be provided and cannot contain spaces",
                 "meta": ["id"]
             },
-            "fastq_1": {
+            "dataset": {
                 "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 1 must be provided, cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+                "pattern": "^\\S+$",
+                "errorMessage": "Dataset name must be provided and cannot contain spaces",
+                "meta": ["dataset"]
             },
-            "fastq_2": {
+            "batch": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "errorMessage": "Batch cannot contain spaces",
+                "meta": ["batch"],
+                "default": null
+            },
+            "class": {
+                "type": "string",
+                "meta": ["class"],
+                "default": null
+            },
+            "data_silo": {
+                "type": "string",
+                "meta": ["data_silo"],
+                "default": null
+            },
+            "gex_feature_counts_file": {
                 "type": "string",
                 "format": "file-path",
                 "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+                "errorMessage": "gex_feature_counts_file must be a valid file path",
+                "meta": ["gex_feature_counts_file"],
+                "default": null
+            },
+            "dnam_beta_matrix_file": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "errorMessage": "dnam_beta_matrix_file must be a valid file path",
+                "meta": ["dnam_beta_matrix_file"],
+                "default": null
+            },
+            "dnam_pvals_file": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "errorMessage": "dnam_pvals_file must be a valid file path",
+                "meta": ["dnam_pvals_file"],
+                "default": null
+            },
+            "sentrix_id": {
+                "type": ["string", "integer"],
+                "errorMessage": "sentrix_id must be a string or integer",
+                "meta": ["sentrix_id"],
+                "default": null
+            },
+            "sentrix_position": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "errorMessage": "sentrix_position cannot contain spaces",
+                "meta": ["sentrix_position"],
+                "default": null
+            },
+            "idats_dir": {
+                "type": "string",
+                "format": "directory-path",
+                "exists": true,
+                "errorMessage": "idats_dir must be a valid directory path",
+                "meta": ["idats_dir"],
+                "default": null
             }
         },
-        "required": ["sample", "fastq_1"]
+        "required": ["sample", "dataset"],
+        "allOf": [
+            {
+                "if": {
+                    "not": {
+                        "required": ["gex_feature_counts_file"]
+                    }
+                },
+                "then": {
+                    "anyOf": [
+                        {
+                            "required": ["dnam_beta_matrix_file", "dnam_pvals_file"]
+                        },
+                        {
+                            "required": ["sentrix_id", "sentrix_position", "idats_dir"]
+                        }
+                    ]
+                }
+            }
+        ]
     }
 }

@@ -1,0 +1,49 @@
+name: "filter_common_probes"
+description: Deduplicate and filter probes to those common across 450K, EPIC v1, and EPIC v2 platforms
+keywords:
+  - methylation
+  - probes
+  - filtering
+  - cross-platform
+  - 450K
+  - EPIC
+tools:
+  - pandas:
+      description: |
+        Python data analysis library used for reading, filtering, and
+        deduplicating the beta value matrix.
+      homepage: https://pandas.pydata.org/
+      licence: ["BSD-3-Clause"]
+
+input:
+  - - betas:
+        type: file
+        description: |
+          Tab-separated file of beta values with probe_id as the first column
+          and sample names as remaining columns.
+        pattern: "*.tsv"
+  - - probe_list:
+        type: file
+        description: |
+          Text file with one probe ID per line, listing probes common across
+          450K, EPIC v1, and EPIC v2 platforms.
+        pattern: "*.txt"
+
+output:
+  - filtered_betas:
+      - "filtered_betas.tsv":
+          type: file
+          description: |
+            Tab-separated file of beta values filtered to only probes in the
+            reference list, with duplicates averaged.
+          pattern: "filtered_betas.tsv"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions
+          pattern: "versions.yml"
+
+authors:
+  - "@methylml"
+maintainers:
+  - "@methylml"

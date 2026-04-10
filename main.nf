@@ -43,7 +43,16 @@ params.fasta = getGenomeAttribute('fasta')
 workflow NFCORE_MLOMIX {
 
     take:
-    samplesheet // channel: samplesheet read in from --input
+    ch_gex_samplesheet
+    ch_datasets
+    ch_batches
+    ch_classes
+    ch_dnam_samplesheet
+    ch_dnam_beta_matrix
+    ch_dnam_pvals
+    genome
+    annotation_version
+    random_seed
 
     main:
 
@@ -51,10 +60,19 @@ workflow NFCORE_MLOMIX {
     // WORKFLOW: Run pipeline
     //
     MLOMIX (
-        samplesheet
+        ch_gex_samplesheet,
+        ch_datasets,
+        ch_batches,
+        ch_classes,
+        ch_dnam_samplesheet,
+        ch_dnam_beta_matrix,
+        ch_dnam_pvals,
+        genome,
+        annotation_version,
+        random_seed
     )
     emit:
-    multiqc_report = MLOMIX.out.multiqc_report // channel: /path/to/multiqc_report.html
+    versions = MLOMIX.out.versions
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -84,7 +102,16 @@ workflow {
     // WORKFLOW: Run main workflow
     //
     NFCORE_MLOMIX (
-        PIPELINE_INITIALISATION.out.samplesheet
+        PIPELINE_INITIALISATION.out.gex_samplesheet,
+        PIPELINE_INITIALISATION.out.datasets,
+        PIPELINE_INITIALISATION.out.batches,
+        PIPELINE_INITIALISATION.out.classes,
+        PIPELINE_INITIALISATION.out.dnam_samplesheet,
+        PIPELINE_INITIALISATION.out.dnam_beta_matrix,
+        PIPELINE_INITIALISATION.out.dnam_pvals,
+        params.genome,
+        PIPELINE_INITIALISATION.out.annotation_version,
+        PIPELINE_INITIALISATION.out.random_seed
     )
     //
     // SUBWORKFLOW: Run completion tasks
@@ -96,7 +123,7 @@ workflow {
         params.outdir,
         params.monochrome_logs,
         params.hook_url,
-        NFCORE_MLOMIX.out.multiqc_report
+        channel.empty()
     )
 }
 

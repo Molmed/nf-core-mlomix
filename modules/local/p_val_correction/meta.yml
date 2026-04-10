@@ -1,0 +1,48 @@
+name: "p_val_correction"
+description: Replace beta values with NaN where detection p-value exceeds threshold
+keywords:
+  - methylation
+  - p-value
+  - quality control
+  - beta values
+  - filtering
+tools:
+  - r-data.table:
+      description: |
+        Fast data manipulation in R using data.table. Used to read and write
+        large TSV matrices efficiently.
+      homepage: https://rdatatable.gitlab.io/data.table/
+      licence: ["MPL-2.0"]
+
+input:
+  - - betas:
+        type: file
+        description: |
+          Tab-separated file of normalized beta values with probe_id as the
+          first column and sample names as remaining columns.
+        pattern: "*.tsv"
+  - - detection_pvals:
+        type: file
+        description: |
+          Tab-separated file of detection p-values with probe_id as the
+          first column and sample names as remaining columns.
+        pattern: "*.tsv"
+
+output:
+  - corrected_betas:
+      - "corrected_betas.tsv":
+          type: file
+          description: |
+            Tab-separated file of beta values with probe values replaced by NaN
+            where the corresponding detection p-value >= threshold (default 0.01).
+          pattern: "corrected_betas.tsv"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions
+          pattern: "versions.yml"
+
+authors:
+  - "@methylml"
+maintainers:
+  - "@methylml"

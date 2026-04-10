@@ -1,0 +1,63 @@
+name: "filter_by_variance"
+description: Remove low-variance features and plot variance distributions
+keywords:
+  - methylation
+  - filtering
+  - variance
+  - plotting
+tools:
+  - pandas:
+      description: Python data analysis library used for variance calculations and filtering.
+      homepage: https://pandas.pydata.org/
+      licence: ["BSD-3-Clause"]
+  - matplotlib:
+      description: Python plotting library used to generate variance distribution plots.
+      homepage: https://matplotlib.org/
+      licence: ["PSF"]
+
+input:
+  - - betas:
+        type: file
+        description: |
+          Tab-separated beta matrix where columns are features to be
+          filtered by variance.
+        pattern: "*.tsv"
+
+output:
+  - variance_filtered_betas:
+      - "variance_filtered_betas.tsv":
+          type: file
+          description: |
+            Tab-separated beta matrix after removing features with variance
+            less than or equal to the threshold.
+          pattern: "variance_filtered_betas.tsv"
+  - variance_plot_before_png:
+      - "variance_distribution_before_filtering.png":
+          type: file
+          description: Histogram of feature variances before filtering (PNG)
+          pattern: "variance_distribution_before_filtering.png"
+  - variance_plot_before_svg:
+      - "variance_distribution_before_filtering.svg":
+          type: file
+          description: Histogram of feature variances before filtering (SVG)
+          pattern: "variance_distribution_before_filtering.svg"
+  - variance_plot_after_png:
+      - "variance_distribution_after_filtering.png":
+          type: file
+          description: Histogram of feature variances after filtering (PNG)
+          pattern: "variance_distribution_after_filtering.png"
+  - variance_plot_after_svg:
+      - "variance_distribution_after_filtering.svg":
+          type: file
+          description: Histogram of feature variances after filtering (SVG)
+          pattern: "variance_distribution_after_filtering.svg"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions
+          pattern: "versions.yml"
+
+authors:
+  - "@methylml"
+maintainers:
+  - "@methylml"

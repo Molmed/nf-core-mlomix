@@ -1,0 +1,12 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - conda-forge::r-base=4.3
+  - bioconda::bioconductor-minfi=1.46.0
+  - bioconda::bioconductor-illuminaio=0.42.0
+  - bioconda::bioconductor-illuminahumanmethylationepicmanifest=0.3.0
+  - bioconda::bioconductor-illuminahumanmethylationepicanno.ilm10b4.hg19=0.6.0
+  - bioconda::bioconductor-illuminahumanmethylation450kmanifest=0.4.0
+  - bioconda::bioconductor-illuminahumanmethylation450kanno.ilmn12.hg19=0.6.1
+  - conda-forge::r-data.table=1.14.8

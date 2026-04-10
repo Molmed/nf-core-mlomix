@@ -11,7 +11,6 @@
 include { UTILS_NFSCHEMA_PLUGIN     } from '../../nf-core/utils_nfschema_plugin'
 include { paramsSummaryMap          } from 'plugin/nf-schema'
 include { samplesheetToList         } from 'plugin/nf-schema'
-include { paramsHelp                } from 'plugin/nf-schema'
 include { completionEmail           } from '../../nf-core/utils_nfcore_pipeline'
 include { completionSummary         } from '../../nf-core/utils_nfcore_pipeline'
 include { imNotification            } from '../../nf-core/utils_nfcore_pipeline'
@@ -29,10 +28,10 @@ workflow PIPELINE_INITIALISATION {
     take:
     version           // boolean: Display version and exit
     validate_params   // boolean: Boolean whether to validate parameters against the schema at runtime
-    monochrome_logs   // boolean: Do not use coloured log outputs
+    _monochrome_logs  // boolean: Do not use coloured log outputs
     nextflow_cli_args //   array: List of positional nextflow CLI args
     outdir            //  string: The output directory where the results will be saved
-    input             //  string: Path to input samplesheet
+    _input            //  string: Path to input samplesheet
     help              // boolean: Display help message and exit
     help_full         // boolean: Show the full help message
     show_hidden       // boolean: Show hidden parameters in the help message
@@ -98,32 +97,99 @@ workflow PIPELINE_INITIALISATION {
     validateInputParameters()
 
     //
-    // Create channel from input file provided through params.input
+    // Create channels from combined GEX + DNAM samplesheet
     //
-
     channel
         .fromList(samplesheetToList(params.input, "${projectDir}/assets/schema_input.json"))
-        .map {
-            meta, fastq_1, fastq_2 ->
-                if (!fastq_2) {
-                    return [ meta.id, meta + [ single_end:true ], [ fastq_1 ] ]
-                } else {
-                    return [ meta.id, meta + [ single_end:false ], [ fastq_1, fastq_2 ] ]
-                }
+        .map { row -> row[0] }
+        .collect()
+        .map { rows ->
+            def mode_info = validateInputSamplesheetModes(rows)
+            params.run_gex = mode_info.run_gex
+            params.run_dnam = mode_info.run_dnam
+            params.use_precomputed_dnam = mode_info.use_precomputed_dnam
+            params.precomputed_dnam_beta_matrix = mode_info.precomputed_beta
+            params.precomputed_dnam_pvals = mode_info.precomputed_pvals
+            rows
         }
+        .set { ch_rows }
+
+    ch_rows
+        .flatMap { rows -> rows }
+        .filter { row -> row.gex_feature_counts_file }
+        .set { ch_gex_rows }
+
+    // Group GEX rows by dataset to build CONCATENATE_GEX input tuples.
+    ch_gex_rows
+        .map { row -> [ row.dataset, row ] }
         .groupTuple()
-        .map { samplesheet ->
-            validateInputSamplesheet(samplesheet)
+        .set { ch_gex_samplesheet }
+
+    ch_gex_samplesheet
+        .map { dataset ->
+            def sample_names = dataset[1].collect { sample -> sample.id }
+            def sample_paths = dataset[1].collect { sample -> file(sample.gex_feature_counts_file, checkIfExists: true) }
+            [dataset[0], sample_names, sample_paths]
         }
-        .map {
-            meta, fastqs ->
-                return [ meta, fastqs.flatten() ]
+        .set { ch_datasets }
+
+    ch_gex_samplesheet
+        .map { dataset ->
+            dataset[1].collect { sample ->
+                def batch_name = sample.batch ?: ''
+                def suffix = batch_name ? "_${batch_name}" : ''
+                "${sample.id}\t${dataset[0]}${suffix}"
+            }.join('\n')
         }
-        .set { ch_samplesheet }
+        .map { content -> "sample\tbatch\n${content}\n" }
+        .collectFile(name: "batches.tsv",
+                     newLine: false,
+                     keepHeader: true,
+                     storeDir: "${params.outdir}/batch")
+        .set { ch_batches }
+
+    ch_gex_samplesheet
+        .map { dataset -> dataset[1] }
+        .collect()
+        .map { grouped_rows ->
+            def rows = grouped_rows.flatten()
+            def header = "sample\tclass"
+            def body = rows.collect { data -> "${data.id}\t${data['class'] ?: ''}" }.join('\n')
+            "${header}\n${body}\n"
+        }
+        .collectFile(name: 'classes.tsv',
+                     newLine: false,
+                     storeDir: "${params.outdir}/class")
+        .set { ch_classes }
+
+    ch_rows
+        .map { _ignored -> file(params.input, checkIfExists: true) }
+        .set { ch_dnam_samplesheet }
+
+    ch_rows
+        .map { _ignored -> params.precomputed_dnam_beta_matrix ? file(params.precomputed_dnam_beta_matrix, checkIfExists: true) : null }
+        .filter { item -> item != null }
+        .set { ch_dnam_beta_matrix }
+
+    ch_rows
+        .map { _ignored -> params.precomputed_dnam_pvals ? file(params.precomputed_dnam_pvals, checkIfExists: true) : null }
+        .filter { item -> item != null }
+        .set { ch_dnam_pvals }
+
+    ch_annotation_version = channel.value(params.annotation_version)
+    ch_random_seed = channel.value(params.random_seed)
 
     emit:
-    samplesheet = ch_samplesheet
-    versions    = ch_versions
+    gex_samplesheet  = ch_gex_samplesheet
+    datasets         = ch_datasets
+    batches          = ch_batches
+    classes          = ch_classes
+    dnam_samplesheet = ch_dnam_samplesheet
+    dnam_beta_matrix = ch_dnam_beta_matrix
+    dnam_pvals       = ch_dnam_pvals
+    annotation_version = ch_annotation_version
+    random_seed      = ch_random_seed
+    versions         = ch_versions
 }
 
 /*
@@ -187,18 +253,64 @@ def validateInputParameters() {
 }
 
 //
-// Validate channels from input samplesheet
+// Validate modes and optional columns in combined input samplesheet
 //
-def validateInputSamplesheet(input) {
-    def (metas, fastqs) = input[1..2]
-
-    // Check that multiple runs of the same sample are of the same datatype i.e. single-end / paired-end
-    def endedness_ok = metas.collect{ meta -> meta.single_end }.unique().size == 1
-    if (!endedness_ok) {
-        error("Please check input samplesheet -> Multiple runs of a sample must be of the same datatype i.e. single-end or paired-end: ${metas[0].id}")
+def validateInputSamplesheetModes(rows) {
+    if (!rows || rows.isEmpty()) {
+        error('Input samplesheet is empty after parsing.')
     }
 
-    return [ metas[0], fastqs ]
+    def run_gex = rows.any { row -> row.gex_feature_counts_file }
+
+    def dnam_rows = rows.findAll { row -> !row.gex_feature_counts_file }
+    def run_dnam = !dnam_rows.isEmpty()
+
+    def precomputed_rows = dnam_rows.findAll { row -> row.dnam_beta_matrix_file || row.dnam_pvals_file }
+    def idat_rows = dnam_rows.findAll { row -> row.sentrix_id || row.sentrix_position || row.idats_dir }
+
+    if (run_dnam && !precomputed_rows.isEmpty() && !idat_rows.isEmpty()) {
+        error('DNAM inputs must use a single mode per run: either precomputed matrices or IDAT columns, not both.')
+    }
+
+    def use_precomputed_dnam = false
+    def precomputed_beta = null
+    def precomputed_pvals = null
+
+    if (!precomputed_rows.isEmpty()) {
+        def invalid_precomputed = precomputed_rows.findAll { row -> !row.dnam_beta_matrix_file || !row.dnam_pvals_file }
+        if (!invalid_precomputed.isEmpty()) {
+            error("Each DNAM row with precomputed inputs must provide both dnam_beta_matrix_file and dnam_pvals_file. Offending sample: ${invalid_precomputed[0].id}")
+        }
+
+        def unique_beta = precomputed_rows.collect { row -> row.dnam_beta_matrix_file }.unique()
+        def unique_pvals = precomputed_rows.collect { row -> row.dnam_pvals_file }.unique()
+        if (unique_beta.size() != 1 || unique_pvals.size() != 1) {
+            error('Precomputed DNAM mode expects one shared dnam_beta_matrix_file and one shared dnam_pvals_file across all DNAM rows.')
+        }
+
+        use_precomputed_dnam = true
+        precomputed_beta = unique_beta[0]
+        precomputed_pvals = unique_pvals[0]
+    }
+
+    if (!idat_rows.isEmpty()) {
+        def invalid_idat = idat_rows.findAll { row -> !row.sentrix_id || !row.sentrix_position || !row.idats_dir }
+        if (!invalid_idat.isEmpty()) {
+            error("Each DNAM row in IDAT mode must provide sentrix_id, sentrix_position and idats_dir. Offending sample: ${invalid_idat[0].id}")
+        }
+    }
+
+    if (!run_gex && !run_dnam) {
+        error('No runnable rows found. Provide gex_feature_counts_file and/or valid DNAM input columns.')
+    }
+
+    [
+        run_gex: run_gex,
+        run_dnam: run_dnam,
+        use_precomputed_dnam: use_precomputed_dnam,
+        precomputed_beta: precomputed_beta,
+        precomputed_pvals: precomputed_pvals
+    ]
 }
 //
 // Get attribute from genome config file e.g. fasta

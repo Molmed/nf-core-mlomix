@@ -1,0 +1,7 @@
+name: filter_annotations
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - pandas=1.5.2

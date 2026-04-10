@@ -1,0 +1,58 @@
+name: "preprocess_minfi"
+description: Preprocess Illumina methylation array data using minfi
+keywords:
+  - methylation
+  - minfi
+  - preprocessing
+  - IDAT
+  - Illumina
+tools:
+  - minfi:
+      description: |
+        Analyze Illumina Infinium DNA methylation arrays. Minfi provides methods
+        for preprocessing, QC, and analysis of methylation array data.
+      homepage: https://bioconductor.org/packages/minfi
+      documentation: https://bioconductor.org/packages/release/bioc/vignettes/minfi/inst/doc/minfi.html
+      licence: ["Artistic-2.0"]
+      identifier: biotools:minfi
+
+input:
+  - - samplesheet:
+        type: file
+        description: |
+          Extended minfi samplesheet in CSV format containing sample information
+          and paths to IDAT files. Required columns include sample,
+          sentrix_id, sentrix_position, and idats_dir.
+        pattern: "*.csv"
+
+output:
+  - rgset:
+      - "rgset.rds":
+          type: file
+          description: RGChannelSet object containing raw data from IDAT files
+          pattern: "rgset.rds"
+  - betas:
+      - "normalized_betas.tsv":
+          type: file
+          description: Tab-separated normalized beta values matrix with probe_id column
+          pattern: "normalized_betas.tsv"
+  - detection_pvals:
+      - "detection_pvalues.tsv":
+          type: file
+          description: Tab-separated detection p-values matrix with probe_id column
+          pattern: "detection_pvalues.tsv"
+  - qc_report:
+      - "qc_report.pdf":
+          type: file
+          description: QC report PDF with density plots and QC metrics
+          pattern: "qc_report.pdf"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions
+          pattern: "versions.yml"
+
+authors:
+  - "@methylml"
+maintainers:
+  - "@methylml"

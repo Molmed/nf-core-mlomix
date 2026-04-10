@@ -20,7 +20,7 @@
                     "mimetype": "text/csv",
                     "pattern": "^\\S+\\.csv$",
                     "description": "Path to comma-separated file containing information about the samples in the experiment.",
-                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row. See [usage docs](https://nf-co.re/mlomix/usage#samplesheet-input).",
+                    "help_text": "Provide a comma-separated design file with at least sample and dataset columns. Optional columns support GEX feature-count inputs and DNAM matrix or IDAT-based preprocessing. See [usage docs](https://nf-co.re/mlomix/usage#samplesheet-input).",
                     "fa_icon": "fas fa-file-csv"
                 },
                 "outdir": {
@@ -79,6 +79,44 @@
                     "fa_icon": "fas fa-ban",
                     "hidden": true,
                     "default": "s3://ngi-igenomes/igenomes/"
+                }
+            }
+        },
+        "workflow_specific_options": {
+            "title": "Workflow-specific options",
+            "type": "object",
+            "fa_icon": "fas fa-flask",
+            "description": "Options specific to GEX and DNAM preprocessing workflows.",
+            "properties": {
+                "annotation_version": {
+                    "type": ["integer", "string"],
+                    "description": "Annotation release version used for GEX reference preprocessing.",
+                    "fa_icon": "fas fa-list-ol"
+                },
+                "random_seed": {
+                    "type": "integer",
+                    "default": 42,
+                    "description": "Random seed used for reproducible dimensionality-reduction outputs.",
+                    "fa_icon": "fas fa-dice"
+                },
+                "common_probes": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "description": "Path to list of methylation probes to retain.",
+                    "fa_icon": "far fa-file-alt"
+                },
+                "missing_threshold": {
+                    "type": "number",
+                    "default": 0.1,
+                    "description": "Drop DNAM features with a missing-value fraction higher than this threshold.",
+                    "fa_icon": "fas fa-percent"
+                },
+                "variance_threshold": {
+                    "type": "number",
+                    "default": 0.01,
+                    "description": "Drop DNAM features with variance lower than or equal to this threshold.",
+                    "fa_icon": "fas fa-wave-square"
                 }
             }
         },
@@ -246,6 +284,9 @@
         },
         {
             "$ref": "#/$defs/reference_genome_options"
+        },
+        {
+            "$ref": "#/$defs/workflow_specific_options"
         },
         {
             "$ref": "#/$defs/institutional_config_options"

@@ -1,0 +1,39 @@
+name: "filter_by_missing"
+description: Remove features with missingness above a configured threshold
+keywords:
+  - methylation
+  - filtering
+  - missingness
+  - features
+tools:
+  - pandas:
+      description: Python data analysis library used for missing value calculations and filtering.
+      homepage: https://pandas.pydata.org/
+      licence: ["BSD-3-Clause"]
+
+input:
+  - - betas:
+        type: file
+        description: |
+          Tab-separated file of beta values where columns are features
+          to be filtered by missingness.
+        pattern: "*.tsv"
+
+output:
+  - missing_filtered_betas:
+      - "missing_filtered_betas.tsv":
+          type: file
+          description: |
+            Tab-separated beta matrix after removing features with missing
+            fraction greater than the threshold.
+          pattern: "missing_filtered_betas.tsv"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions
+          pattern: "versions.yml"
+
+authors:
+  - "@methylml"
+maintainers:
+  - "@methylml"

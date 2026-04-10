@@ -1,0 +1,10 @@
+name: umap
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - umap-learn=0.5.7
+  - pandas==2.2.3
+  - seaborn==0.13.2
+  - matplotlib==3.9.2
+  - glasbey==0.3.0

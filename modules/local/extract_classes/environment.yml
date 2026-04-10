@@ -1,0 +1,7 @@
+channels:
+  - conda-forge
+dependencies:
+  - conda-forge::python=3.11
+  - conda-forge::pandas=2.0
+  - conda-forge::numpy
+  - conda-forge::matplotlib=3.8
