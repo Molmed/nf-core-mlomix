@@ -36,39 +36,74 @@ workflow MLOMIX {
     ch_gex_transposed = channel.empty()
     ch_classes_tsv = channel.empty()
 
-    def run_gex_val = run_gex.val
-    def run_dnam_val = run_dnam.val
+    ch_genome_for_gex = run_gex
+        .filter { flag -> flag }
+        .map { flag -> genome }
 
-    if (run_gex_val) {
-        GEX_REF_PREPROCESSOR (
-            genome,
-            annotation_version
-        )
+    ch_annotation_for_gex = run_gex
+        .filter { flag -> flag }
+        .map { flag -> annotation_version }
 
-        GEX (
-            ch_gex_samplesheet,
-            ch_datasets,
-            ch_batches,
-            ch_classes,
-            GEX_REF_PREPROCESSOR.out.filtered_annotations,
-            random_seed
-        )
+    ch_gex_samplesheet_gated = ch_gex_samplesheet
+        .combine(run_gex)
+        .filter { item -> item[-1] }
+        .map { item -> [item[0], item[1]] }
 
-        ch_versions = ch_versions.mix(GEX_REF_PREPROCESSOR.out.versions)
-        ch_versions = ch_versions.mix(GEX.out.versions)
-        ch_gex_transposed = GEX.out.transposed_csv
-        ch_classes_tsv = GEX.out.classes_tsv
-    }
+    ch_datasets_gated = ch_datasets
+        .combine(run_gex)
+        .filter { item -> item[-1] }
+        .map { item -> [item[0], item[1], item[2]] }
 
-    if (run_dnam_val) {
-        DNAM (
-            ch_dnam_samplesheet,
-            ch_dnam_beta_matrix,
-            ch_dnam_pvals,
-            use_precomputed_dnam
-        )
-        ch_versions = ch_versions.mix(DNAM.out.versions)
-    }
+    ch_batches_gated = ch_batches
+        .combine(run_gex)
+        .filter { item -> item[-1] }
+        .map { item -> item[0] }
+
+    ch_classes_gated = ch_classes
+        .combine(run_gex)
+        .filter { item -> item[-1] }
+        .map { item -> item[0] }
+
+    ch_random_seed_gated = run_gex
+        .filter { flag -> flag }
+        .map { flag -> random_seed }
+
+    GEX_REF_PREPROCESSOR (
+        ch_genome_for_gex,
+        ch_annotation_for_gex
+    )
+
+    GEX (
+        ch_gex_samplesheet_gated,
+        ch_datasets_gated,
+        ch_batches_gated,
+        ch_classes_gated,
+        GEX_REF_PREPROCESSOR.out.filtered_annotations,
+        ch_random_seed_gated
+    )
+
+    ch_versions = ch_versions.mix(GEX_REF_PREPROCESSOR.out.versions)
+    ch_versions = ch_versions.mix(GEX.out.versions)
+    ch_gex_transposed = GEX.out.transposed_csv
+    ch_classes_tsv = GEX.out.classes_tsv
+
+    ch_dnam_samplesheet_gated = ch_dnam_samplesheet
+        .combine(run_dnam)
+        .filter { item -> item[-1] }
+        .map { item -> item[0] }
+
+    ch_use_precomputed_dnam_gated = use_precomputed_dnam
+        .combine(run_dnam)
+        .filter { item -> item[-1] }
+        .map { item -> item[0] }
+
+    DNAM (
+        ch_dnam_samplesheet_gated,
+        ch_dnam_beta_matrix,
+        ch_dnam_pvals,
+        ch_use_precomputed_dnam_gated
+    )
+    ch_versions = ch_versions.mix(DNAM.out.versions)
 
     emit:
     versions = ch_versions

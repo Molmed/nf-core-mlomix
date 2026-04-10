@@ -27,25 +27,32 @@ workflow DNAM {
     main:
 
     ch_versions = channel.empty()
-    def use_precomputed = ch_use_precomputed_dnam.val
 
     //
     // MODULE: Preprocess methylation array data with minfi
     //
-    def ch_beta_matrix
-    def ch_detection_pvals
+    ch_samplesheet_for_minfi = ch_samplesheet
+        .combine(ch_use_precomputed_dnam)
+        .filter { item -> !item[-1] }
+        .map { item -> item[0] }
 
-    if (use_precomputed) {
-        ch_beta_matrix = ch_precomputed_beta_matrix
-        ch_detection_pvals = ch_precomputed_pvals
-    } else {
-        PREPROCESS_MINFI (
-            ch_samplesheet
-        )
-        ch_versions = ch_versions.mix(PREPROCESS_MINFI.out.versions)
-        ch_beta_matrix = PREPROCESS_MINFI.out.betas
-        ch_detection_pvals = PREPROCESS_MINFI.out.detection_pvals
-    }
+    ch_precomputed_beta_matrix_gated = ch_precomputed_beta_matrix
+        .combine(ch_use_precomputed_dnam)
+        .filter { item -> item[-1] }
+        .map { item -> item[0] }
+
+    ch_precomputed_pvals_gated = ch_precomputed_pvals
+        .combine(ch_use_precomputed_dnam)
+        .filter { item -> item[-1] }
+        .map { item -> item[0] }
+
+    PREPROCESS_MINFI (
+        ch_samplesheet_for_minfi
+    )
+    ch_versions = ch_versions.mix(PREPROCESS_MINFI.out.versions)
+
+    ch_beta_matrix = PREPROCESS_MINFI.out.betas.mix(ch_precomputed_beta_matrix_gated)
+    ch_detection_pvals = PREPROCESS_MINFI.out.detection_pvals.mix(ch_precomputed_pvals_gated)
 
     //
     // MODULE: Replace beta values with NaN where detection p-value >= threshold
