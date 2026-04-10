@@ -110,6 +110,14 @@ workflow PIPELINE_INITIALISATION {
     def parsed_rows = samplesheetToList(params.input, "${projectDir}/assets/schema_input.json").collect { row -> row[0] }
     def mode_info = validateInputSamplesheetModes(parsed_rows)
 
+    if (mode_info.run_gex && !params.genome) {
+        error("GEX input was detected but '--genome' is missing. Please provide a supported genome key (e.g. --genome GRCh38).")
+    }
+
+    if (mode_info.run_gex && !params.annotation_version) {
+        error("GEX input was detected but '--annotation_version' is missing. Please provide an Ensembl release (e.g. --annotation_version 109).")
+    }
+
     ch_rows = channel.value(parsed_rows)
 
     ch_rows

@@ -82,8 +82,6 @@ workflow NFCORE_MLOMIX {
     genome
     annotation_version
     random_seed
-    run_gex
-    run_dnam
 
     main:
 
@@ -100,9 +98,7 @@ workflow NFCORE_MLOMIX {
         ch_dnam_pvals,
         genome,
         annotation_version,
-        random_seed,
-        run_gex,
-        run_dnam
+        random_seed
     )
     emit:
     versions = MLOMIX.out.versions
@@ -124,6 +120,9 @@ workflow {
     if (params.input) {
         mode_info = inferRunFlags(params.input)
     }
+
+    params.run_gex = mode_info.run_gex
+    params.run_dnam = mode_info.run_dnam
 
     //
     // SUBWORKFLOW: Run initialisation tasks
@@ -153,9 +152,7 @@ workflow {
         PIPELINE_INITIALISATION.out.dnam_pvals,
         params.genome,
         PIPELINE_INITIALISATION.out.annotation_version,
-        PIPELINE_INITIALISATION.out.random_seed,
-        mode_info.run_gex,
-        mode_info.run_dnam
+        PIPELINE_INITIALISATION.out.random_seed
     )
     //
     // SUBWORKFLOW: Run completion tasks
