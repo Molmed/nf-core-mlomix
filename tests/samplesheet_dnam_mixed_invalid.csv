@@ -1,0 +1,3 @@
+sample,dataset,batch,class,dnam_beta_matrix_file,dnam_pvals_file,sentrix_id,sentrix_position,idats_dir
+sample_dnam_1,dataset_b,batch_1,classA,tests/data/dnam_beta_matrix.tsv,tests/data/dnam_pvals.tsv,,
+sample_dnam_2,dataset_c,batch_1,classB,,,202123456790,R02C01,tests/data/idats/

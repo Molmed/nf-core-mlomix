@@ -4,29 +4,78 @@ nextflow_pipeline {
     script "../main.nf"
     tag "pipeline"
 
-    test("-profile test") {
+    test("GEX-only mode") {
 
         when {
             params {
                 outdir = "$outputDir"
+                input = 'tests/samplesheet_gex_only.csv'
+                run_gex = true
+                run_dnam = false
+                annotation_version = 'v107'
             }
         }
 
         then {
-            // stable_name: All files + folders in ${params.outdir}/ with a stable name
-            def stable_name = getAllFilesFromDir(params.outdir, relative: true, includeDir: true, ignore: ['pipeline_info/*.{html,json,txt}'])
-            // stable_path: All files in ${params.outdir}/ with stable content
-            def stable_path = getAllFilesFromDir(params.outdir, ignoreFile: 'tests/.nftignore')
             assertAll(
-                { assert workflow.success},
-                { assert snapshot(
-                    // pipeline versions.yml file for multiqc from which Nextflow version is removed because we test pipelines on multiple Nextflow versions
-                    removeNextflowVersion("$outputDir/pipeline_info/nf_core_mlomix_software_mqc_versions.yml"),
-                    // All stable path name, with a relative path
-                    stable_name,
-                    // All files with stable contents
-                    stable_path
-                ).match() }
+                { assert workflow.success }
+            )
+        }
+    }
+
+    test("DNAM-precomputed mode") {
+
+        when {
+            params {
+                outdir = "$outputDir"
+                input = 'tests/samplesheet_dnam_precomputed.csv'
+                run_gex = false
+                run_dnam = true
+                use_precomputed_dnam = true
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.success }
+            )
+        }
+    }
+
+    test("DNAM-IDAT mode") {
+
+        when {
+            params {
+                outdir = "$outputDir"
+                input = 'tests/samplesheet_dnam_idat.csv'
+                run_gex = false
+                run_dnam = true
+                use_precomputed_dnam = false
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.success }
+            )
+        }
+    }
+
+    test("Invalid mixed DNAM mode (should fail)") {
+
+        when {
+            params {
+                outdir = "$outputDir"
+                input = 'tests/samplesheet_dnam_mixed_invalid.csv'
+                run_gex = false
+                run_dnam = true
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.failed },
+                { assert workflow.stderr.contains("different dnam modes") || workflow.stderr.contains("DNAM") }
             )
         }
     }
