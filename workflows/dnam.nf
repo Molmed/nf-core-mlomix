@@ -3,12 +3,12 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-include { EXTRACT_CLASSES        } from '../modules/local/extract_classes/main'
-include { PREPROCESS_MINFI       } from '../modules/local/preprocess_minfi/main'
-include { P_VAL_CORRECTION       } from '../modules/local/p_val_correction/main'
-include { FILTER_COMMON_PROBES   } from '../modules/local/filter_common_probes/main'
-include { FILTER_BY_MISSING      } from '../modules/local/filter_by_missing/main'
-include { FILTER_BY_VARIANCE     } from '../modules/local/filter_by_variance/main'
+include { EXTRACT_CLASSES        } from '../modules/local/dnam/extract_classes/main'
+include { PREPROCESS_MINFI       } from '../modules/local/dnam/preprocess_minfi/main'
+include { P_VAL_CORRECTION       } from '../modules/local/dnam/p_val_correction/main'
+include { FILTER_COMMON_PROBES   } from '../modules/local/dnam/filter_common_probes/main'
+include { FILTER_BY_MISSING      } from '../modules/local/dnam/filter_by_missing/main'
+include { FILTER_BY_VARIANCE     } from '../modules/local/dnam/filter_by_variance/main'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 
 /*
