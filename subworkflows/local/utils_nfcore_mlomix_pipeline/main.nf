@@ -11,6 +11,7 @@
 include { UTILS_NFSCHEMA_PLUGIN     } from '../../nf-core/utils_nfschema_plugin'
 include { paramsSummaryMap          } from 'plugin/nf-schema'
 include { samplesheetToList         } from 'plugin/nf-schema'
+include { CLASS_REPORTER            } from '../../../modules/local/mlomix/class_reporter/main'
 include { completionEmail           } from '../../nf-core/utils_nfcore_pipeline'
 include { completionSummary         } from '../../nf-core/utils_nfcore_pipeline'
 include { imNotification            } from '../../nf-core/utils_nfcore_pipeline'
@@ -95,6 +96,13 @@ workflow PIPELINE_INITIALISATION {
     // Custom validation for pipeline parameters
     //
     validateInputParameters()
+
+    //
+    // Shared class report, generated once before any workflow branching
+    //
+    ch_samplesheet_report = channel.fromPath(params.input, checkIfExists: true)
+    CLASS_REPORTER(ch_samplesheet_report)
+    ch_versions = ch_versions.mix(CLASS_REPORTER.out.versions)
 
     //
     // Create channels from combined GEX + DNAM samplesheet

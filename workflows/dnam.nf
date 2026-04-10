@@ -3,7 +3,6 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-include { EXTRACT_CLASSES        } from '../modules/local/dnam/extract_classes/main'
 include { PREPROCESS_MINFI       } from '../modules/local/dnam/preprocess_minfi/main'
 include { P_VAL_CORRECTION       } from '../modules/local/dnam/p_val_correction/main'
 include { FILTER_COMMON_PROBES   } from '../modules/local/dnam/filter_common_probes/main'
@@ -27,14 +26,6 @@ workflow DNAM {
     main:
 
     ch_versions = channel.empty()
-
-    //
-    // MODULE: Extract class distribution from samplesheet
-    //
-    EXTRACT_CLASSES (
-        ch_samplesheet
-    )
-    ch_versions = ch_versions.mix(EXTRACT_CLASSES.out.versions)
 
     //
     // MODULE: Preprocess methylation array data with minfi

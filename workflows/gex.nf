@@ -5,7 +5,6 @@
 */
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { CLASS_REPORTER         } from '../modules/local/gex/class_reporter/class_reporter'
 include { CONCATENATE_GEX        } from '../modules/local/gex/concatenate_gex'
 include { UMAP as UMAP_RAW_BY_BATCH  } from '../modules/local/gex/umap/umap'
 include { UMAP as UMAP_BC_BY_BATCH   } from '../modules/local/gex/umap/umap'
@@ -38,11 +37,6 @@ workflow GEX {
     main:
 
     ch_versions = channel.empty()
-
-    CLASS_REPORTER (
-        ch_classes
-    )
-    ch_versions = ch_versions.mix(CLASS_REPORTER.out.versions)
 
     CONCATENATE_GEX (
         ch_dataset
