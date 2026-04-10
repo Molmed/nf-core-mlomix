@@ -105,26 +105,12 @@ workflow PIPELINE_INITIALISATION {
     ch_versions = ch_versions.mix(CLASS_REPORTER.out.versions)
 
     //
-    // Create channels from combined GEX + DNAM samplesheet and validate modes
+    // Create channels from combined GEX + DNAM samplesheet
     //
-    channel
-        .fromList(samplesheetToList(params.input, "${projectDir}/assets/schema_input.json"))
-        .map { row -> row[0] }
-        .collect()
-        .map { rows ->
-            def mode_info = validateInputSamplesheetModes(rows)
-            [rows, mode_info]
-        }
-        .set { ch_rows_and_mode_info }
+    def parsed_rows = samplesheetToList(params.input, "${projectDir}/assets/schema_input.json").collect { row -> row[0] }
+    def mode_info = validateInputSamplesheetModes(parsed_rows)
 
-    // Extract rows and mode info into separate channels
-    ch_rows_and_mode_info
-        .map { rows_and_info -> rows_and_info[0] }
-        .set { ch_rows }
-
-    ch_rows_and_mode_info
-        .map { rows_and_info -> rows_and_info[1] }
-        .set { ch_mode_info }
+    ch_rows = channel.value(parsed_rows)
 
     ch_rows
         .flatMap { rows -> rows }
@@ -179,38 +165,17 @@ workflow PIPELINE_INITIALISATION {
         .set { ch_dnam_samplesheet }
 
     ch_rows
-        .map { _ignored -> params.precomputed_dnam_beta_matrix ? file(params.precomputed_dnam_beta_matrix, checkIfExists: true) : null }
+        .map { _ignored -> mode_info.precomputed_beta ? file(mode_info.precomputed_beta, checkIfExists: true) : null }
         .filter { item -> item != null }
         .set { ch_dnam_beta_matrix }
 
     ch_rows
-        .map { _ignored -> params.precomputed_dnam_pvals ? file(params.precomputed_dnam_pvals, checkIfExists: true) : null }
+        .map { _ignored -> mode_info.precomputed_pvals ? file(mode_info.precomputed_pvals, checkIfExists: true) : null }
         .filter { item -> item != null }
         .set { ch_dnam_pvals }
 
     ch_annotation_version = channel.value(params.annotation_version)
     ch_random_seed = channel.value(params.random_seed)
-
-    // Create value channels from mode_info for use in downstream workflows
-    ch_mode_info
-        .map { info -> info.run_gex }
-        .set { ch_run_gex }
-
-    ch_mode_info
-        .map { info -> info.run_dnam }
-        .set { ch_run_dnam }
-
-    ch_mode_info
-        .map { info -> info.use_precomputed_dnam }
-        .set { ch_use_precomputed_dnam }
-
-    ch_mode_info
-        .map { info -> info.precomputed_beta }
-        .set { ch_precomputed_beta }
-
-    ch_mode_info
-        .map { info -> info.precomputed_pvals }
-        .set { ch_precomputed_pvals }
 
     emit:
     gex_samplesheet       = ch_gex_samplesheet
@@ -222,11 +187,6 @@ workflow PIPELINE_INITIALISATION {
     dnam_pvals            = ch_dnam_pvals
     annotation_version    = ch_annotation_version
     random_seed           = ch_random_seed
-    run_gex               = ch_run_gex
-    run_dnam              = ch_run_dnam
-    use_precomputed_dnam  = ch_use_precomputed_dnam
-    precomputed_beta      = ch_precomputed_beta
-    precomputed_pvals     = ch_precomputed_pvals
     versions              = ch_versions
 }
 
@@ -335,7 +295,6 @@ def validateInputSamplesheetModes(rows) {
 
     // Mixed-mode support: allow different samples to use different DNAM modes in the same run
     def precomputed_rows = dnam_rows.findAll { row -> row.dnam_beta_matrix_file || row.dnam_pvals_file }
-    def idat_rows = dnam_rows.findAll { row -> row.sentrix_id || row.sentrix_position || row.idats_dir }
 
     def use_precomputed_dnam = !precomputed_rows.isEmpty()
     def precomputed_beta = null
