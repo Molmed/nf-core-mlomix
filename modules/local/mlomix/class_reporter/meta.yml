@@ -1,0 +1,44 @@
+name: "class_reporter"
+description: Extract sample class distribution from the input samplesheet and generate a report
+keywords:
+  - samplesheet
+  - class
+  - distribution
+  - report
+tools:
+  - pandas:
+      description: Python data analysis library used for reading the samplesheet and computing class distributions.
+      homepage: https://pandas.pydata.org/
+      licence: ["BSD-3-Clause"]
+  - matplotlib:
+      description: Python plotting library used for generating class distribution bar charts.
+      homepage: https://matplotlib.org/
+      licence: ["PSF-2.0"]
+
+input:
+  - - samplesheet:
+        type: file
+        description: Samplesheet in CSV or TSV format containing an optional class column.
+        pattern: "*.{csv,tsv}"
+
+output:
+  - class_plot:
+      - "class_distribution.svg":
+          type: file
+          description: Bar chart of the class distribution across samples
+          pattern: "class_distribution.svg"
+  - class_csv:
+      - "class_distribution.csv":
+          type: file
+          description: CSV file with the count of samples per class
+          pattern: "class_distribution.csv"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions
+          pattern: "versions.yml"
+
+authors:
+  - "@methylml"
+maintainers:
+  - "@methylml"
