@@ -28,17 +28,12 @@ workflow DNAM {
     main:
 
     ch_versions = channel.empty()
-    ch_dnam_rows = ch_samplesheet.flatMap { rows ->
-        if (rows instanceof List) {
-            return rows
-        }
-        return [rows]
-    }
 
     //
     // MODULE: Concatenate precomputed DNAm matrices by sample
     //
-    ch_precomputed_rows = ch_dnam_rows
+    ch_precomputed_rows = ch_samplesheet
+        .flatMap { rows -> (rows instanceof List) ? rows : [rows] }
         .filter { row -> row['dnam_beta_matrix_file'] || row['dnam_pvals_file'] }
 
     ch_precomputed_rows
@@ -48,8 +43,8 @@ workflow DNAM {
             [
                 dataset[0],
                 dataset[1].collect { sample -> sample['id'] },
-                dataset[1].collect { sample -> file(sample['dnam_beta_matrix_file'], checkIfExists: true) },
-                dataset[1].collect { sample -> file(sample['dnam_pvals_file'], checkIfExists: true) }
+                dataset[1].collect { sample -> file(sample['dnam_beta_matrix_file'], checkIfExists: true).toString() },
+                dataset[1].collect { sample -> file(sample['dnam_pvals_file'], checkIfExists: true).toString() }
             ]
         }
         .set { ch_precomputed_dnam }
@@ -62,7 +57,8 @@ workflow DNAM {
     //
     // MODULE: Preprocess methylation array data with minfi
     //
-    ch_samplesheet_for_minfi = ch_dnam_rows
+    ch_samplesheet_for_minfi = ch_samplesheet
+        .flatMap { rows -> (rows instanceof List) ? rows : [rows] }
         .filter { row -> row['sentrix_id'] || row['sentrix_position'] || row['idats_dir'] }
         .map { row -> "${row['id']},${row['idats_dir']}" }
         .collect()

@@ -169,7 +169,11 @@ workflow PIPELINE_INITIALISATION {
                      storeDir: "${params.outdir}/class")
         .set { ch_classes }
 
-    ch_rows.set { ch_dnam_samplesheet }
+    // Create separate channel for DNAM using fresh reference to avoid double-subscription issues
+    // Wrap in another list to prevent combine() from flattening the rows
+    channel.value([parsed_rows])
+        .map { it -> it[0] }  // Unwrap to get back the list of rows
+        .set { ch_dnam_samplesheet }
 
     ch_dnam_beta_matrix = channel.empty()
     ch_dnam_pvals = channel.empty()

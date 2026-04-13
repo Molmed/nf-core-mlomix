@@ -7,7 +7,7 @@ process CONCATENATE_DNAM {
         'biocontainers/pandas:1.5.2' }"
 
     input:
-    tuple val(dataset_name), val(sample_names), path(beta_matrix_paths), path(pvals_paths)
+    tuple val(dataset_name), val(sample_names), val(beta_matrix_paths), val(pvals_paths)
 
     output:
     path "${dataset_name}.beta_matrix.tsv", emit: beta_matrix

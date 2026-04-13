@@ -87,10 +87,8 @@ workflow MLOMIX {
     ch_gex_transposed = GEX.out.transposed_csv
     ch_classes_tsv = GEX.out.classes_tsv
 
+    // Pass ch_dnam_samplesheet directly without restructuring to preserve list integrity
     ch_dnam_samplesheet_gated = ch_dnam_samplesheet
-        .combine(run_dnam)
-        .filter { item -> item[-1] }
-        .map { item -> item[0] }
 
     ch_use_precomputed_dnam_gated = use_precomputed_dnam
         .combine(run_dnam)
