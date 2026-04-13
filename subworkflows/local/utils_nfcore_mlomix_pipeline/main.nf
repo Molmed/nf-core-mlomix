@@ -169,19 +169,10 @@ workflow PIPELINE_INITIALISATION {
                      storeDir: "${params.outdir}/class")
         .set { ch_classes }
 
-    ch_rows
-        .map { _ignored -> file(params.input, checkIfExists: true) }
-        .set { ch_dnam_samplesheet }
+    ch_rows.set { ch_dnam_samplesheet }
 
-    ch_rows
-        .map { _ignored -> mode_info.precomputed_beta ? file(mode_info.precomputed_beta, checkIfExists: true) : null }
-        .filter { item -> item != null }
-        .set { ch_dnam_beta_matrix }
-
-    ch_rows
-        .map { _ignored -> mode_info.precomputed_pvals ? file(mode_info.precomputed_pvals, checkIfExists: true) : null }
-        .filter { item -> item != null }
-        .set { ch_dnam_pvals }
+    ch_dnam_beta_matrix = channel.empty()
+    ch_dnam_pvals = channel.empty()
 
     ch_annotation_version = channel.value(params.annotation_version)
     ch_random_seed = channel.value(params.random_seed)
@@ -277,23 +268,23 @@ def validateInputSamplesheetModes(rows) {
 
     // A sample can carry both modalities; DNAM detection must be based on DNAM columns, not on absence of GEX.
     def dnam_rows = rows.findAll { row ->
-        row.dnam_beta_matrix_file || row.dnam_pvals_file || row.sentrix_id || row.sentrix_position || row.idats_dir
+        row['dnam_beta_matrix_file'] || row['dnam_pvals_file'] || row['sentrix_id'] || row['sentrix_position'] || row['idats_dir']
     }
     def run_dnam = !dnam_rows.isEmpty()
 
     // Validate that each DNAM sample uses exactly one mode (per-sample validation)
     dnam_rows.each { row ->
-        def has_precomputed = row.dnam_beta_matrix_file || row.dnam_pvals_file
-        def has_idat = row.sentrix_id || row.sentrix_position || row.idats_dir
+        def has_precomputed = row['dnam_beta_matrix_file'] || row['dnam_pvals_file']
+        def has_idat = row['sentrix_id'] || row['sentrix_position'] || row['idats_dir']
 
         // Check for incomplete precomputed mode
-        if ((row.dnam_beta_matrix_file && !row.dnam_pvals_file) || (!row.dnam_beta_matrix_file && row.dnam_pvals_file)) {
+        if ((row['dnam_beta_matrix_file'] && !row['dnam_pvals_file']) || (!row['dnam_beta_matrix_file'] && row['dnam_pvals_file'])) {
             error("DNAM sample '${row.id}' has incomplete precomputed mode: both dnam_beta_matrix_file and dnam_pvals_file are required together.")
         }
 
         // Check for incomplete IDAT mode
-        if ((row.sentrix_id || row.sentrix_position || row.idats_dir) &&
-            (!row.sentrix_id || !row.sentrix_position || !row.idats_dir)) {
+        if ((row['sentrix_id'] || row['sentrix_position'] || row['idats_dir']) &&
+            (!row['sentrix_id'] || !row['sentrix_position'] || !row['idats_dir'])) {
             error("DNAM sample '${row.id}' has incomplete IDAT mode: sentrix_id, sentrix_position and idats_dir are all required together.")
         }
 
@@ -309,23 +300,9 @@ def validateInputSamplesheetModes(rows) {
     }
 
     // Mixed-mode support: allow different samples to use different DNAM modes in the same run
-    def precomputed_rows = dnam_rows.findAll { row -> row.dnam_beta_matrix_file || row.dnam_pvals_file }
+    def precomputed_rows = dnam_rows.findAll { row -> row['dnam_beta_matrix_file'] || row['dnam_pvals_file'] }
 
     def use_precomputed_dnam = !precomputed_rows.isEmpty()
-    def precomputed_beta = null
-    def precomputed_pvals = null
-
-    if (!precomputed_rows.isEmpty()) {
-        // Expect single shared precomputed matrices across all precomputed DNAM rows
-        def unique_beta = precomputed_rows.collect { row -> row.dnam_beta_matrix_file }.unique()
-        def unique_pvals = precomputed_rows.collect { row -> row.dnam_pvals_file }.unique()
-        if (unique_beta.size() != 1 || unique_pvals.size() != 1) {
-            error('All DNAM precomputed rows must reference the same dnam_beta_matrix_file and dnam_pvals_file.')
-        }
-
-        precomputed_beta = unique_beta[0]
-        precomputed_pvals = unique_pvals[0]
-    }
 
     if (!run_gex && !run_dnam) {
         error('No runnable rows found. Provide gex_feature_counts_file and/or valid DNAM input columns.')
@@ -335,8 +312,8 @@ def validateInputSamplesheetModes(rows) {
         run_gex: run_gex,
         run_dnam: run_dnam,
         use_precomputed_dnam: use_precomputed_dnam,
-        precomputed_beta: precomputed_beta,
-        precomputed_pvals: precomputed_pvals
+        precomputed_rows: precomputed_rows,
+        idat_rows: dnam_rows.findAll { row -> row['sentrix_id'] || row['sentrix_position'] || row['idats_dir'] }
     ]
 }
 //
