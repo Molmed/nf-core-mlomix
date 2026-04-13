@@ -28,51 +28,51 @@ process CONCATENATE_DNAM {
     """
     #!/usr/bin/env python3
 
-    import pandas as pd
-    import sys
+import pandas as pd
+import sys
 
-    beta_inputs = [${beta_mapping_entries}]
-    pval_inputs = [${pval_mapping_entries}]
+beta_inputs = [${beta_mapping_entries}]
+pval_inputs = [${pval_mapping_entries}]
 
-    def extract_sample_series(file_path, sample_name):
-        dataframe = pd.read_csv(file_path, sep="\t")
+def extract_sample_series(file_path, sample_name):
+    dataframe = pd.read_csv(file_path, sep="\t")
 
-        if "probe_id" in dataframe.columns:
-            dataframe = dataframe.set_index("probe_id")
-        else:
-            dataframe = dataframe.set_index(dataframe.columns[0])
+    if "probe_id" in dataframe.columns:
+        dataframe = dataframe.set_index("probe_id")
+    else:
+        dataframe = dataframe.set_index(dataframe.columns[0])
 
-        if sample_name in dataframe.columns:
-            series = dataframe[sample_name]
-        else:
-            value_columns = list(dataframe.columns)
-            if len(value_columns) != 1:
-                raise ValueError(
-                    f"Could not determine a single value column for {file_path} and sample {sample_name}"
-                )
-            series = dataframe[value_columns[0]]
+    if sample_name in dataframe.columns:
+        series = dataframe[sample_name]
+    else:
+        value_columns = list(dataframe.columns)
+        if len(value_columns) != 1:
+            raise ValueError(
+                f"Could not determine a single value column for {file_path} and sample {sample_name}"
+            )
+        series = dataframe[value_columns[0]]
 
-        series.index.name = None
-        return series
+    series.index.name = None
+    return series
 
-    def concatenate(inputs, output_file):
-        sample_frames = {}
+def concatenate(inputs, output_file):
+    sample_frames = {}
 
-        for file_path, sample_name in inputs:
-            sample_frames[sample_name] = extract_sample_series(file_path, sample_name)
+    for file_path, sample_name in inputs:
+        sample_frames[sample_name] = extract_sample_series(file_path, sample_name)
 
-        data = pd.concat(sample_frames, axis=1)
-        data = data.sort_index(axis=1)
-        data.to_csv(output_file, sep="\t", index_label="probe_id")
+    data = pd.concat(sample_frames, axis=1)
+    data = data.sort_index(axis=1)
+    data.to_csv(output_file, sep="\t", index_label="probe_id")
 
-    concatenate(beta_inputs, "${dataset_name}.beta_matrix.tsv")
-    concatenate(pval_inputs, "${dataset_name}.detection_pvals.tsv")
+concatenate(beta_inputs, "${dataset_name}.beta_matrix.tsv")
+concatenate(pval_inputs, "${dataset_name}.detection_pvals.tsv")
 
-    import pandas
-    with open("versions.yml", "w") as f:
-        f.write('"${task.process}":\n')
-        f.write(f'    python: "{sys.version.split()[0]}"\n')
-        f.write(f'    pandas: "{pandas.__version__}"\n')
+import pandas
+with open("versions.yml", "w") as f:
+    f.write('"${task.process}":\\n')
+    f.write(f'    python: "{sys.version.split()[0]}"\\n')
+    f.write(f'    pandas: "{pandas.__version__}"\\n')
     """
 
     stub:
