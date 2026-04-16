@@ -73,12 +73,12 @@
                 "meta": ["sentrix_position"],
                 "default": null
             },
-            "idats_dir": {
+            "idats_basename": {
                 "type": "string",
                 "format": "directory-path",
                 "exists": true,
-                "errorMessage": "idats_dir must be a valid directory path",
-                "meta": ["idats_dir"],
+                "errorMessage": "idats_basename must be a valid directory path",
+                "meta": ["idats_basename"],
                 "default": null
             }
         },
@@ -96,7 +96,7 @@
                             "required": ["dnam_beta_matrix_file", "dnam_pvals_file"]
                         },
                         {
-                            "required": ["sentrix_id", "sentrix_position", "idats_dir"]
+                            "required": ["sentrix_id", "sentrix_position", "idats_basename"]
                         }
                     ]
                 }

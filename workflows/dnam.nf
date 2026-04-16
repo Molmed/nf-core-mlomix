@@ -59,10 +59,10 @@ workflow DNAM {
     //
     ch_samplesheet_for_minfi = ch_samplesheet
         .flatMap { rows -> (rows instanceof List) ? rows : [rows] }
-        .filter { row -> row['sentrix_id'] || row['sentrix_position'] || row['idats_dir'] }
-        .map { row -> "${row['id']},${row['sentrix_id']},${row['sentrix_position']},${row['idats_dir']}" }
+        .filter { row -> row['sentrix_id'] || row['sentrix_position'] || row['idats_basename'] }
+        .map { row -> "${row['id']},${row['sentrix_id']},${row['sentrix_position']},${row['idats_basename']}" }
         .collect()
-        .map { lines -> "sample,sentrix_id,sentrix_position,idats_dir\n${lines.join('\n')}\n" }
+        .map { lines -> "sample,sentrix_id,sentrix_position,idats_basename\n${lines.join('\n')}\n" }
         .collectFile(
             storeDir: "${params.outdir}/dnam",
             name: 'idat_samplesheet.csv',

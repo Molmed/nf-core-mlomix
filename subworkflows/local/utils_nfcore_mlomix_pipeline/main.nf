@@ -272,14 +272,14 @@ def validateInputSamplesheetModes(rows) {
 
     // A sample can carry both modalities; DNAM detection must be based on DNAM columns, not on absence of GEX.
     def dnam_rows = rows.findAll { row ->
-        row['dnam_beta_matrix_file'] || row['dnam_pvals_file'] || row['sentrix_id'] || row['sentrix_position'] || row['idats_dir']
+        row['dnam_beta_matrix_file'] || row['dnam_pvals_file'] || row['sentrix_id'] || row['sentrix_position'] || row['idats_basename']
     }
     def run_dnam = !dnam_rows.isEmpty()
 
     // Validate that each DNAM sample uses exactly one mode (per-sample validation)
     dnam_rows.each { row ->
         def has_precomputed = row['dnam_beta_matrix_file'] || row['dnam_pvals_file']
-        def has_idat = row['sentrix_id'] || row['sentrix_position'] || row['idats_dir']
+        def has_idat = row['sentrix_id'] || row['sentrix_position'] || row['idats_basename']
 
         // Check for incomplete precomputed mode
         if ((row['dnam_beta_matrix_file'] && !row['dnam_pvals_file']) || (!row['dnam_beta_matrix_file'] && row['dnam_pvals_file'])) {
@@ -287,9 +287,9 @@ def validateInputSamplesheetModes(rows) {
         }
 
         // Check for incomplete IDAT mode
-        if ((row['sentrix_id'] || row['sentrix_position'] || row['idats_dir']) &&
-            (!row['sentrix_id'] || !row['sentrix_position'] || !row['idats_dir'])) {
-            error("DNAM sample '${row.id}' has incomplete IDAT mode: sentrix_id, sentrix_position and idats_dir are all required together.")
+        if ((row['sentrix_id'] || row['sentrix_position'] || row['idats_basename']) &&
+            (!row['sentrix_id'] || !row['sentrix_position'] || !row['idats_basename'])) {
+            error("DNAM sample '${row.id}' has incomplete IDAT mode: sentrix_id, sentrix_position and idats_basename are all required together.")
         }
 
         // Check for mixing modes within a single sample
@@ -299,7 +299,7 @@ def validateInputSamplesheetModes(rows) {
 
         // Check that sample has at least one DNAM mode
         if (!has_precomputed && !has_idat) {
-            error("DNAM sample '${row.id}' has no valid DNAM input. Provide either (dnam_beta_matrix_file + dnam_pvals_file) or (sentrix_id + sentrix_position + idats_dir).")
+            error("DNAM sample '${row.id}' has no valid DNAM input. Provide either (dnam_beta_matrix_file + dnam_pvals_file) or (sentrix_id + sentrix_position + idats_basename).")
         }
     }
 
@@ -317,7 +317,7 @@ def validateInputSamplesheetModes(rows) {
         run_dnam: run_dnam,
         use_precomputed_dnam: use_precomputed_dnam,
         precomputed_rows: precomputed_rows,
-        idat_rows: dnam_rows.findAll { row -> row['sentrix_id'] || row['sentrix_position'] || row['idats_dir'] }
+        idat_rows: dnam_rows.findAll { row -> row['sentrix_id'] || row['sentrix_position'] || row['idats_basename'] }
     ]
 }
 //

@@ -22,7 +22,7 @@ input:
         description: |
           Extended minfi samplesheet in CSV format containing sample information
           and paths to IDAT files. Required columns include sample,
-          sentrix_id, sentrix_position, and idats_dir.
+          sentrix_id, sentrix_position, and idats_basename.
         pattern: "*.csv"
 
 output:

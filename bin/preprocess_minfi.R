@@ -47,17 +47,17 @@ if (grepl("\t", first_line)) {
 
 cat("Found", nrow(targets), "samples\n\n")
 
-# Ensure idats_dir column exists
-if (!"idats_dir" %in% colnames(targets)) {
-    stop("Samplesheet must contain an 'idats_dir' column with paths to IDAT files.")
+# Ensure idats_basename column exists
+if (!"idats_basename" %in% colnames(targets)) {
+    stop("Samplesheet must contain an 'idats_basename' column with paths to IDAT files.")
 }
 
-# Normalize idats_dir values to avoid hidden mismatches due to whitespace.
-targets$idats_dir <- trimws(as.character(targets$idats_dir))
+# Normalize idats_basename values to avoid hidden mismatches due to whitespace.
+targets$idats_basename <- trimws(as.character(targets$idats_basename))
 
 # Build minfi Basename.
-# Preferred input is idats_dir + sentrix_id + sentrix_position, where Basename is:
-#   <idats_dir>/<sentrix_id>_<sentrix_position>
+# Preferred input is idats_basename + sentrix_id + sentrix_position, where Basename is:
+#   <idats_basename>/<sentrix_id>_<sentrix_position>
 has_sentrix_cols <- all(c("sentrix_id", "sentrix_position") %in% colnames(targets))
 
 if (has_sentrix_cols) {
@@ -68,10 +68,10 @@ if (has_sentrix_cols) {
         stop("Samplesheet has empty sentrix_id/sentrix_position values. These are required for IDAT mode.")
     }
 
-    targets$Basename <- file.path(targets$idats_dir, paste0(sentrix_id, "_", sentrix_position))
+    targets$Basename <- file.path(targets$idats_basename, paste0(sentrix_id, "_", sentrix_position))
 } else {
     # Backward-compatible fallback for direct-basename samplesheets.
-    targets$Basename <- targets$idats_dir
+    targets$Basename <- targets$idats_basename
 }
 
 # minfi requires unique basenames.

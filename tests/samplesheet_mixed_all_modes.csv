@@ -1,4 +1,4 @@
-sample,dataset,batch,class,gex_feature_counts_file,dnam_beta_matrix_file,dnam_pvals_file,sentrix_id,sentrix_position,idats_dir
+sample,dataset,batch,class,gex_feature_counts_file,dnam_beta_matrix_file,dnam_pvals_file,sentrix_id,sentrix_position,idats_basename
 sample_gex_1,dataset_a,batch_1,classA,tests/data/gex_sample1_counts.tsv,,,,
 sample_gex_2,dataset_a,batch_1,classB,tests/data/gex_sample2_counts.tsv,,,,
 sample_dnam_precomp_1,dataset_b,batch_1,classA,,tests/data/dnam_beta_matrix.tsv,tests/data/dnam_pvals.tsv,,

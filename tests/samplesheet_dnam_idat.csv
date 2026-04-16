@@ -1,4 +1,4 @@
-sample,dataset,batch,class,sentrix_id,sentrix_position,idats_dir
+sample,dataset,batch,class,sentrix_id,sentrix_position,idats_basename
 sample_idat_1,dataset_c,batch_1,classA,202123456789,R01C01,tests/data/idats/
 sample_idat_2,dataset_c,batch_1,classB,202123456790,R02C01,tests/data/idats/
 sample_idat_3,dataset_c,batch_2,classA,202123456791,R03C01,tests/data/idats/
