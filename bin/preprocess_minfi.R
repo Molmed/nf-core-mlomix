@@ -52,8 +52,41 @@ if (!"idats_dir" %in% colnames(targets)) {
     stop("Samplesheet must contain an 'idats_dir' column with paths to IDAT files.")
 }
 
-# minfi expects the IDAT path column to be named Basename.
-targets$Basename <- targets$idats_dir
+# Normalize idats_dir values to avoid hidden mismatches due to whitespace.
+targets$idats_dir <- trimws(as.character(targets$idats_dir))
+
+# Build minfi Basename.
+# Preferred input is idats_dir + sentrix_id + sentrix_position, where Basename is:
+#   <idats_dir>/<sentrix_id>_<sentrix_position>
+has_sentrix_cols <- all(c("sentrix_id", "sentrix_position") %in% colnames(targets))
+
+if (has_sentrix_cols) {
+    sentrix_id <- trimws(as.character(targets$sentrix_id))
+    sentrix_position <- trimws(as.character(targets$sentrix_position))
+
+    if (any(is.na(sentrix_id) | sentrix_id == "") || any(is.na(sentrix_position) | sentrix_position == "")) {
+        stop("Samplesheet has empty sentrix_id/sentrix_position values. These are required for IDAT mode.")
+    }
+
+    targets$Basename <- file.path(targets$idats_dir, paste0(sentrix_id, "_", sentrix_position))
+} else {
+    # Backward-compatible fallback for direct-basename samplesheets.
+    targets$Basename <- targets$idats_dir
+}
+
+# minfi requires unique basenames.
+dup_idx <- duplicated(targets$Basename) | duplicated(targets$Basename, fromLast = TRUE)
+if (any(dup_idx)) {
+    dup_values <- unique(targets$Basename[dup_idx])
+    dup_preview <- paste(head(dup_values, 5), collapse = "\n  - ")
+    stop(
+        paste0(
+            "Duplicate IDAT basenames detected (", length(dup_values), " unique duplicates). ",
+            "Each sample must map to a unique Sentrix_ID + Sentrix_Position combination.\n",
+            "Examples:\n  - ", dup_preview
+        )
+    )
+}
 
 # Read IDAT files into RGChannelSet
 cat("Reading IDAT files...\n")
