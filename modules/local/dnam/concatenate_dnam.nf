@@ -11,7 +11,7 @@ process CONCATENATE_DNAM {
 
     output:
     path "${dataset_name}.beta_matrix.tsv", emit: beta_matrix
-    path "${dataset_name}.detection_pvals.tsv", emit: detection_pvals
+    path "${dataset_name}.detection_pvals.tsv", emit: detection_pvals, optional: true
     val dataset_name, emit: dataset_name
     path "versions.yml", emit: versions
 
@@ -22,7 +22,9 @@ process CONCATENATE_DNAM {
     def beta_mapping_entries = [sample_names, beta_matrix_paths].transpose().collect { sample_name, file_path ->
         "[\"${file_path.toString()}\", \"${sample_name.toString()}\"]"
     }.join(", ")
-    def pval_mapping_entries = [sample_names, pvals_paths].transpose().collect { sample_name, file_path ->
+    def pval_mapping_entries = [sample_names, pvals_paths].transpose().findAll { _sample_name, file_path ->
+        file_path
+    }.collect { sample_name, file_path ->
         "[\"${file_path.toString()}\", \"${sample_name.toString()}\"]"
     }.join(", ")
     """
@@ -56,6 +58,9 @@ def extract_sample_series(file_path, sample_name):
     return series
 
 def concatenate(inputs, output_file):
+    if not inputs:
+        return False
+
     sample_frames = {}
 
     for file_path, sample_name in inputs:
@@ -64,6 +69,7 @@ def concatenate(inputs, output_file):
     data = pd.concat(sample_frames, axis=1)
     data = data.sort_index(axis=1)
     data.to_csv(output_file, sep="\t", index_label="probe_id")
+    return True
 
 concatenate(beta_inputs, "${dataset_name}.beta_matrix.tsv")
 concatenate(pval_inputs, "${dataset_name}.detection_pvals.tsv")

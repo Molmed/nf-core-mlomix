@@ -42,6 +42,25 @@ nextflow_pipeline {
         }
     }
 
+    test("DNAM-precomputed beta-only mode") {
+
+        when {
+            params {
+                outdir = "$outputDir"
+                input = 'tests/samplesheet_dnam_precomputed_beta_only.csv'
+                run_gex = false
+                run_dnam = true
+                use_precomputed_dnam = true
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.success }
+            )
+        }
+    }
+
     test("DNAM-IDAT mode") {
 
         when {

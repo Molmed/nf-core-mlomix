@@ -44,7 +44,7 @@ workflow DNAM {
                 dataset[0],
                 dataset[1].collect { sample -> sample['id'] },
                 dataset[1].collect { sample -> file(sample['dnam_beta_matrix_file'], checkIfExists: true).toString() },
-                dataset[1].collect { sample -> file(sample['dnam_pvals_file'], checkIfExists: true).toString() }
+                dataset[1].collect { sample -> sample['dnam_pvals_file'] ? file(sample['dnam_pvals_file'], checkIfExists: true).toString() : null }
             ]
         }
         .set { ch_precomputed_dnam }
@@ -74,24 +74,50 @@ workflow DNAM {
     )
     ch_versions = ch_versions.mix(PREPROCESS_MINFI.out.versions)
 
-    ch_beta_matrix = PREPROCESS_MINFI.out.betas.mix(CONCATENATE_DNAM.out.beta_matrix)
-    ch_detection_pvals = PREPROCESS_MINFI.out.detection_pvals.mix(CONCATENATE_DNAM.out.detection_pvals)
+    ch_precomputed_beta_by_dataset = CONCATENATE_DNAM.out.beta_matrix
+        .map { beta ->
+            def dataset_name = beta.baseName.replaceFirst(/\.beta_matrix$/, '')
+            [dataset_name, beta]
+        }
+
+    ch_precomputed_pvals_by_dataset = CONCATENATE_DNAM.out.detection_pvals
+        .map { detection_pvals ->
+            def dataset_name = detection_pvals.baseName.replaceFirst(/\.detection_pvals$/, '')
+            [dataset_name, detection_pvals]
+        }
+
+    ch_precomputed_pairs = ch_precomputed_beta_by_dataset
+        .join(ch_precomputed_pvals_by_dataset)
+
+    ch_precomputed_beta_only = ch_precomputed_beta_by_dataset
+        .join(ch_precomputed_pvals_by_dataset, remainder: true)
+        .filter { tuple_item -> tuple_item[2] == null }
+        .map { tuple_item -> tuple_item[1] }
+
+    ch_beta_for_correction = PREPROCESS_MINFI.out.betas.mix(
+        ch_precomputed_pairs.map { tuple_item -> tuple_item[1] }
+    )
+    ch_detection_for_correction = PREPROCESS_MINFI.out.detection_pvals.mix(
+        ch_precomputed_pairs.map { tuple_item -> tuple_item[2] }
+    )
 
     //
     // MODULE: Replace beta values with NaN where detection p-value >= threshold
     //
     P_VAL_CORRECTION (
-        ch_beta_matrix,
-        ch_detection_pvals
+        ch_beta_for_correction,
+        ch_detection_for_correction
     )
     ch_versions = ch_versions.mix(P_VAL_CORRECTION.out.versions)
+
+    ch_corrected_or_passthrough_betas = P_VAL_CORRECTION.out.corrected_betas.mix(ch_precomputed_beta_only)
 
     //
     // MODULE: Deduplicate probes and filter to probes common across 450K/EPIC1/EPIC2
     //
     ch_common_probes = channel.fromPath(params.common_probes, checkIfExists: true)
     FILTER_COMMON_PROBES (
-        P_VAL_CORRECTION.out.corrected_betas,
+        ch_corrected_or_passthrough_betas,
         ch_common_probes
     )
     ch_versions = ch_versions.mix(FILTER_COMMON_PROBES.out.versions)
