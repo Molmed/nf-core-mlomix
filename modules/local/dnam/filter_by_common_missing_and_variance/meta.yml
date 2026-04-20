@@ -1,0 +1,70 @@
+name: "filter_by_common_missing_and_variance"
+description: Deduplicate and filter DNAm beta matrix by common probes, missingness, and variance in a single module
+keywords:
+  - methylation
+  - probes
+  - missingness
+  - variance
+  - filtering
+tools:
+  - pandas:
+      description: Python data analysis library used for deduplication, filtering, and variance calculations.
+      homepage: https://pandas.pydata.org/
+      licence: ["BSD-3-Clause"]
+  - matplotlib:
+      description: Python plotting library used to generate variance distribution plots.
+      homepage: https://matplotlib.org/
+      licence: ["PSF"]
+
+input:
+  - - betas:
+        type: file
+        description: |
+          Tab-separated beta matrix with probe_id as the first column and
+          sample names as remaining columns.
+        pattern: "*.tsv"
+  - - probe_list:
+        type: file
+        description: |
+          Text file with one probe ID per line, listing probes common across
+          supported methylation array platforms.
+        pattern: "*.txt"
+
+output:
+  - variance_filtered_betas:
+      - "variance_filtered_betas.tsv":
+          type: file
+          description: |
+            Tab-separated beta matrix after common probe, missingness, and
+            variance filtering.
+          pattern: "variance_filtered_betas.tsv"
+  - variance_plot_before_png:
+      - "variance_distribution_before_filtering.png":
+          type: file
+          description: Histogram of feature variances before filtering (PNG)
+          pattern: "variance_distribution_before_filtering.png"
+  - variance_plot_before_svg:
+      - "variance_distribution_before_filtering.svg":
+          type: file
+          description: Histogram of feature variances before filtering (SVG)
+          pattern: "variance_distribution_before_filtering.svg"
+  - variance_plot_after_png:
+      - "variance_distribution_after_filtering.png":
+          type: file
+          description: Histogram of feature variances after filtering (PNG)
+          pattern: "variance_distribution_after_filtering.png"
+  - variance_plot_after_svg:
+      - "variance_distribution_after_filtering.svg":
+          type: file
+          description: Histogram of feature variances after filtering (SVG)
+          pattern: "variance_distribution_after_filtering.svg"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions
+          pattern: "versions.yml"
+
+authors:
+  - "@methylml"
+maintainers:
+  - "@methylml"

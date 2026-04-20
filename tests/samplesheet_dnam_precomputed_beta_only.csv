@@ -1,0 +1,4 @@
+sample,dataset,batch,class,dnam_beta_matrix_file,dnam_pvals_file
+sample_dnam_1,dataset_b,batch_1,classA,tests/data/dnam_beta_matrix.tsv,
+sample_dnam_2,dataset_b,batch_1,classB,tests/data/dnam_beta_matrix.tsv,
+sample_dnam_3,dataset_b,batch_2,classA,tests/data/dnam_beta_matrix.tsv,
