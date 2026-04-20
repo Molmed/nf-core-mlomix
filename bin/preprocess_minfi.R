@@ -90,7 +90,45 @@ if (any(dup_idx)) {
 
 # Read IDAT files into RGChannelSet
 cat("Reading IDAT files...\n")
-rg_set <- read.metharray.exp(targets = targets)
+
+# Validate file existence first
+cat("Checking for IDAT file accessibility...\n")
+missing_files <- NULL
+for (i in seq_len(nrow(targets))) {
+    basename <- targets$Basename[i]
+    grn_file <- paste0(basename, "_Grn.idat")
+    red_file <- paste0(basename, "_Red.idat")
+    if (!file.exists(grn_file)) {
+        missing_files <- c(missing_files, grn_file)
+    }
+    if (!file.exists(red_file)) {
+        missing_files <- c(missing_files, red_file)
+    }
+}
+
+if (!is.null(missing_files)) {
+    stop(paste("Missing IDAT files for", length(missing_files) / 2, "samples. Examples:\n  ",
+               paste(head(missing_files, 4), collapse = "\n  ")))
+}
+cat("All expected IDAT files found.\n\n")
+
+# Use SerialParam for sequential reading to avoid BiocParallel race conditions
+# This is slower but more robust for large datasets with potential file read issues
+library(BiocParallel)
+
+result <- tryCatch({
+    # Attempt parallel read first (faster for small-to-medium datasets)
+    cat("Attempting parallel read...\n")
+    read.metharray.exp(targets = targets, verbose = TRUE)
+}, error = function(e) {
+    # Fall back to serial reading on error
+    cat("Parallel read failed, switching to serial mode...\n")
+    cat("Error message:", conditionMessage(e), "\n")
+    read.metharray.exp(targets = targets, verbose = TRUE,
+                       BPPARAM = BiocParallel::SerialParam())
+})
+
+rg_set <- result
 cat("Created RGChannelSet with", ncol(rg_set), "samples\n\n")
 
 # Save RGChannelSet
