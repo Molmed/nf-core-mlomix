@@ -19,38 +19,23 @@ def read_beta_matrix(
     file_path: str,
     sample_name: str | None = None,
 ) -> pd.DataFrame:
-    """Read beta matrix robustly for single-sample inputs."""
-    preview_df = pd.read_csv(file_path, sep="\t")
+    """Read headerless beta matrix (probe_id + beta columns)."""
+    beta_df = pd.read_csv(file_path, sep="\t", header=None)
 
-    if preview_df.shape[1] < 2:
+    if beta_df.shape[1] < 2:
         raise ValueError(
             "Expected at least 2 columns in beta file, got "
-            f"{preview_df.shape[1]}"
+            f"{beta_df.shape[1]}"
         )
 
-    first_col = str(preview_df.columns[0])
+    if str(beta_df.iloc[0, 0]).strip().lower() == "probe_id":
+        beta_df = beta_df.iloc[1:, :]
 
-    # Headerless two-column files are read with the first probe ID
-    # as the second-column header.
-    looks_like_probe_id = first_col.lower().startswith(("cg", "ch", "rs"))
-    if (
-        first_col != "probe_id"
-        and preview_df.shape[1] == 2
-        and looks_like_probe_id
-    ):
-        inferred_name = sample_name or "sample"
-        beta_df = pd.read_csv(
-            file_path,
-            sep="\t",
-            header=None,
-            names=["probe_id", inferred_name],
-        )
-    else:
-        beta_df = preview_df
-        if beta_df.columns[0] != "probe_id":
-            beta_df = beta_df.rename(columns={beta_df.columns[0]: "probe_id"})
-        if sample_name and beta_df.shape[1] == 2:
-            beta_df = beta_df.rename(columns={beta_df.columns[1]: sample_name})
+    beta_df.columns = ["probe_id"] + [
+        f"value_{i}" for i in range(1, beta_df.shape[1])
+    ]
+    if sample_name and beta_df.shape[1] == 2:
+        beta_df = beta_df.rename(columns={"value_1": sample_name})
 
     beta_df = beta_df.set_index("probe_id")
     return beta_df
@@ -144,7 +129,8 @@ def main():
 
     # Save output
     output_file = os.path.join(args.outdir, "filtered_betas.tsv")
-    beta_df.to_csv(output_file, sep="\t", index_label="probe_id")
+    beta_df.index.name = None
+    beta_df.to_csv(output_file, sep="\t", header=False)
     print(f"Saved filtered beta values to {output_file}")
 
     print("\n=== Filtering complete ===")

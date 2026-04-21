@@ -221,7 +221,12 @@ cat("Created RGChannelSet with", ncol(rg_set), "sample\n")
 detP <- detectionP(rg_set)
 colnames(detP) <- pData(rg_set)$sample
 detp_out <- file.path(opt$outdir, paste0(opt$out_prefix, ".detection_pvalues.tsv"))
-fwrite(as.data.table(detP, keep.rownames = "probe_id"), file = detp_out, sep = "\t")
+fwrite(
+    as.data.table(detP, keep.rownames = "probe_id"),
+    file = detp_out,
+    sep = "\t",
+    col.names = FALSE
+)
 cat("Saved detection p-values to", basename(detp_out), "\n")
 
 rm(detP)
@@ -245,7 +250,12 @@ if (ncol(rg_set) < 2) {
 beta <- getBeta(m_set)
 colnames(beta) <- pData(m_set)$sample
 beta_out <- file.path(opt$outdir, paste0(opt$out_prefix, ".normalized_betas.tsv"))
-fwrite(as.data.table(beta, keep.rownames = "probe_id"), file = beta_out, sep = "\t")
+fwrite(
+    as.data.table(beta, keep.rownames = "probe_id"),
+    file = beta_out,
+    sep = "\t",
+    col.names = FALSE
+)
 cat("Saved normalized betas to", basename(beta_out), "\n\n")
 
 rm(m_set, rg_set, beta)

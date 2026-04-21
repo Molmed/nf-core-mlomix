@@ -9,6 +9,25 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
+def read_beta_matrix(file_path: str) -> pd.DataFrame:
+    """Read headerless beta matrix (probe_id + beta columns)."""
+    beta_df = pd.read_csv(file_path, sep="\t", header=None)
+
+    if beta_df.shape[1] < 2:
+        raise ValueError(
+            "Expected at least 2 columns in beta file, got "
+            f"{beta_df.shape[1]}"
+        )
+
+    if str(beta_df.iloc[0, 0]).strip().lower() == "probe_id":
+        beta_df = beta_df.iloc[1:, :]
+
+    beta_df.columns = ["probe_id"] + [
+        f"value_{i}" for i in range(1, beta_df.shape[1])
+    ]
+    return beta_df.set_index("probe_id")
+
+
 def plot_variance_distribution(
     variances: pd.Series,
     threshold: float,
@@ -110,7 +129,7 @@ def main() -> None:
     os.makedirs(args.outdir, exist_ok=True)
     os.chdir(args.outdir)
 
-    beta_df = pd.read_csv(args.betas, sep="\t", index_col=0)
+    beta_df = read_beta_matrix(args.betas)
     print(f"Input matrix shape: {beta_df.shape}\n")
 
     filtered_df = remove_low_variance_features(
@@ -118,11 +137,8 @@ def main() -> None:
     )
 
     output_file = "variance_filtered_betas.tsv"
-    filtered_df.to_csv(
-        output_file,
-        sep="\t",
-        index_label=beta_df.index.name or "probe_id",
-    )
+    filtered_df.index.name = None
+    filtered_df.to_csv(output_file, sep="\t", header=False)
     print(f"Saved variance-filtered beta values to {output_file}")
     print("Saved variance distribution plots (before/after) as PNG and SVG")
 

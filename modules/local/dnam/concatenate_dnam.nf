@@ -30,22 +30,25 @@ import sys
 beta_inputs = [${beta_mapping_entries}]
 
 def extract_sample_series(file_path, sample_name):
-    dataframe = pd.read_csv(file_path, sep="\t")
+    dataframe = pd.read_csv(file_path, sep="\t", header=None)
 
-    if "probe_id" in dataframe.columns:
-        dataframe = dataframe.set_index("probe_id")
-    else:
-        dataframe = dataframe.set_index(dataframe.columns[0])
+    if dataframe.shape[1] < 2:
+        raise ValueError(
+            f"Expected at least 2 columns in {file_path}, got {dataframe.shape[1]}"
+        )
 
-    if sample_name in dataframe.columns:
-        series = dataframe[sample_name]
-    else:
-        value_columns = list(dataframe.columns)
-        if len(value_columns) != 1:
-            raise ValueError(
-                f"Could not determine a single value column for {file_path} and sample {sample_name}"
-            )
-        series = dataframe[value_columns[0]]
+    if str(dataframe.iloc[0, 0]).strip().lower() == "probe_id":
+        dataframe = dataframe.iloc[1:, :]
+
+    dataframe.columns = ["probe_id"] + [f"value_{i}" for i in range(1, dataframe.shape[1])]
+    dataframe = dataframe.set_index("probe_id")
+
+    value_columns = list(dataframe.columns)
+    if len(value_columns) != 1:
+        raise ValueError(
+            f"Could not determine a single value column for {file_path} and sample {sample_name}"
+        )
+    series = dataframe[value_columns[0]]
 
     series.index.name = None
     return series
@@ -60,8 +63,9 @@ def concatenate(inputs, output_file):
         sample_frames[sample_name] = extract_sample_series(file_path, sample_name)
 
     data = pd.concat(sample_frames, axis=1)
+    data.index.name = None
     data = data.sort_index(axis=1)
-    data.to_csv(output_file, sep="\t", index_label="probe_id")
+    data.to_csv(output_file, sep="\t", header=False)
     return True
 
 concatenate(beta_inputs, "${dataset_name}.beta_matrix.tsv")
