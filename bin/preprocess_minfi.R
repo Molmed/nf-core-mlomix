@@ -246,6 +246,10 @@ cat("Detection p-values matrix:", nrow(detP), "probes x", ncol(detP), "samples\n
 fwrite(as.data.table(detP, keep.rownames = "probe_id"), file = file.path(opt$outdir, "detection_pvalues.tsv"), sep = "\t")
 cat("Saved detection p-values to detection_pvalues.tsv\n\n")
 
+# Release large matrix before functional normalization to reduce peak RAM usage.
+rm(detP)
+invisible(gc())
+
 # Preprocess with functional normalization (includes Noob + dye bias correction)
 # This returns GenomicRatioSet and therefore ratioConvert not needed
 cat("Performing functional normalization...\n")
@@ -255,6 +259,10 @@ m_set <- preprocessFunnorm(rg_set)
 beta <- getBeta(m_set)
 colnames(beta) <- pData(m_set)$sample
 cat("Extracted beta values matrix:", nrow(beta), "probes x", ncol(beta), "samples\n")
+
+# Free intermediate object before converting/writing beta table.
+rm(m_set)
+invisible(gc())
 
 # Save normalized beta values
 fwrite(as.data.table(beta, keep.rownames = "probe_id"), file = file.path(opt$outdir, "normalized_betas.tsv"), sep = "\t")
