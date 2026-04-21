@@ -70,7 +70,7 @@ workflow DNAM {
     //
     // MODULE: Preprocess methylation array data with minfi
     //
-    ch_samplesheet_for_minfi = ch_samplesheet
+    ch_minfi_samples = ch_samplesheet
         .flatMap { rows -> (rows instanceof List) ? rows : [rows] }
         .filter { row -> row['sentrix_id'] || row['sentrix_position'] || row['idats_basename'] }
         .map { row ->
@@ -80,41 +80,21 @@ workflow DNAM {
             def sample_name = row['id'] == null ? 'sample' : row['id'].toString().trim()
             sample_name = sample_name ? sample_name : 'sample'
             sample_name = sample_name.replaceAll(/[^A-Za-z0-9._-]/, '_')
-            "${sample_name},${dataset_name},${row['sentrix_id']},${row['sentrix_position']},${row['idats_basename']}"
+            [
+                dataset_name,
+                sample_name,
+                row['sentrix_id'],
+                row['sentrix_position'],
+                row['idats_basename']
+            ]
         }
-        .collect()
-        .map { lines -> "sample,dataset,sentrix_id,sentrix_position,idats_basename\n${lines.join('\n')}\n" }
-        .collectFile(
-            storeDir: "${params.outdir}/dnam",
-            name: 'idat_samplesheet.csv',
-            newLine: false
-        )
 
     PREPROCESS_MINFI (
-        ch_samplesheet_for_minfi
+        ch_minfi_samples
     )
     ch_versions = ch_versions.mix(PREPROCESS_MINFI.out.versions)
 
-    ch_minfi_beta_by_key = PREPROCESS_MINFI.out.betas
-        .map { beta ->
-            def key = beta.baseName.replaceFirst(/\.normalized_betas$/, '')
-            [key, beta]
-        }
-
-    ch_minfi_pvals_by_key = PREPROCESS_MINFI.out.detection_pvals
-        .map { detection_pvals ->
-            def key = detection_pvals.baseName.replaceFirst(/\.detection_pvalues$/, '')
-            [key, detection_pvals]
-        }
-
-    ch_minfi_pairs = ch_minfi_beta_by_key
-        .join(ch_minfi_pvals_by_key)
-        .map { key, beta, detection_pvals ->
-            def parts = key.tokenize('__')
-            def dataset_name = parts ? parts[0] : 'dataset'
-            def sample_name = parts.size() > 1 ? parts[1..-1].join('__') : key
-            [dataset_name, sample_name, beta, detection_pvals]
-        }
+    ch_minfi_pairs = PREPROCESS_MINFI.out.corrected_inputs
 
     ch_pairs_for_correction = ch_minfi_pairs.mix(ch_precomputed_pairs)
 

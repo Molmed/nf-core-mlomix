@@ -8,21 +8,27 @@ process PREPROCESS_MINFI {
         'community.wave.seqera.io/library/bioconductor-illuminahumanmethylation450kanno.ilmn12.hg19_bioconductor-illuminahumanmethylation450kmanifest_bioconductor-illuminahumanmethylationepicanno.ilm10b4.hg19_bioconductor-illuminahumanmethylationepicmanifest_pruned:98e7c81d1a064d77' }"
 
     input:
-    path samplesheet
+    tuple val(dataset_name), val(sample_name), val(sentrix_id), val(sentrix_position), val(idats_basename)
 
     output:
-    path "*.normalized_betas.tsv"  , emit: betas
-    path "*.detection_pvalues.tsv" , emit: detection_pvals
-    path "versions.yml"           , emit: versions
+    tuple val(dataset_name), val(sample_name), path("${dataset_name}__${sample_name}.normalized_betas.tsv"), path("${dataset_name}__${sample_name}.detection_pvalues.tsv"), emit: corrected_inputs
+    path "versions.yml"            , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
+    def sample_sheet_name = "${dataset_name}__${sample_name}.samplesheet.csv"
     """
+    cat <<'EOF' > ${sample_sheet_name}
+sample,dataset,sentrix_id,sentrix_position,idats_basename
+${sample_name},${dataset_name},${sentrix_id},${sentrix_position},${idats_basename}
+EOF
+
     preprocess_minfi.R \\
-        --samplesheet ${samplesheet} \\
+        --samplesheet ${sample_sheet_name} \
+        --out-prefix ${dataset_name}__${sample_name} \
         ${args}
 
     cat <<-END_VERSIONS > versions.yml
@@ -34,8 +40,8 @@ process PREPROCESS_MINFI {
 
     stub:
     """
-    touch sample_001.normalized_betas.tsv
-    touch sample_001.detection_pvalues.tsv
+    touch ${dataset_name}__${sample_name}.normalized_betas.tsv
+    touch ${dataset_name}__${sample_name}.detection_pvalues.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

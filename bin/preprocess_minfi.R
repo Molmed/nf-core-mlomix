@@ -8,7 +8,7 @@ library(data.table)
 
 # Parse command line arguments
 args <- commandArgs(trailingOnly = TRUE)
-opt <- list(samplesheet = NULL, outdir = ".")
+opt <- list(samplesheet = NULL, outdir = ".", out_prefix = NULL)
 
 i <- 1
 while (i <= length(args)) {
@@ -17,6 +17,9 @@ while (i <= length(args)) {
         i <- i + 2
     } else if (args[i] %in% c("-o", "--outdir")) {
         opt$outdir <- args[i + 1]
+        i <- i + 2
+    } else if (args[i] %in% c("--out-prefix")) {
+        opt$out_prefix <- args[i + 1]
         i <- i + 2
     } else {
         i <- i + 1
@@ -30,6 +33,10 @@ if (is.null(opt$samplesheet)) {
 
 if (!file.exists(opt$samplesheet)) {
     stop(paste("Samplesheet not found:", opt$samplesheet))
+}
+
+if (is.null(opt$out_prefix) || trimws(opt$out_prefix) == "") {
+    stop("--out-prefix is required.")
 }
 
 cat("=== Minfi Preprocessing ===\n")
@@ -59,6 +66,10 @@ if (grepl("\t", first_line)) {
 }
 
 cat("Found", nrow(targets), "samples\n\n")
+
+if (nrow(targets) != 1) {
+    stop("PREPROCESS_MINFI expects a one-sample samplesheet.")
+}
 
 # Ensure idats_basename column exists
 if (!"idats_basename" %in% colnames(targets)) {
@@ -177,71 +188,53 @@ if (length(bad_files) > 0) {
 }
 cat("All IDAT files are parseable.\n\n")
 
-slugify <- function(value, fallback = "value") {
-    value <- as.character(value)
-    if (length(value) == 0 || is.na(value) || trimws(value) == "") {
-        value <- fallback
+
+sample_targets <- targets[1, , drop = FALSE]
+sample_label <- safe_sample_label(targets, 1)
+dataset_label <- if ("dataset" %in% colnames(targets)) as.character(targets$dataset[1]) else "dataset"
+
+cat("Processing sample one-by-one via task boundary...\n\n")
+cat("Sample:", sample_label, "| Dataset:", dataset_label, "\n")
+
+rg_set <- tryCatch({
+    read.metharray.exp(targets = sample_targets, verbose = TRUE)
+}, error = function(e) {
+    err_msg <- conditionMessage(e)
+    cat("Initial read failed, evaluating retry strategy...\n")
+    cat("Error message:", err_msg, "\n")
+
+    if (grepl("different array size", err_msg, ignore.case = TRUE)) {
+        cat("Detected mixed array size input. Retrying with force=TRUE...\n")
+        return(read.metharray.exp(targets = sample_targets, verbose = TRUE, force = TRUE))
     }
-    value <- gsub("[^A-Za-z0-9._-]", "_", trimws(value))
-    if (value == "") {
-        value <- fallback
-    }
-    value
-}
 
-cat("Processing samples one-by-one...\n\n")
-
-for (i in seq_len(nrow(targets))) {
-    sample_targets <- targets[i, , drop = FALSE]
-    sample_label <- safe_sample_label(targets, i)
-    dataset_label <- if ("dataset" %in% colnames(targets)) as.character(targets$dataset[i]) else "dataset"
-    dataset_slug <- slugify(dataset_label, "dataset")
-    sample_slug <- slugify(sample_label, paste0("sample_", i))
-    prefix <- paste0(dataset_slug, "__", sample_slug, "__row", sprintf("%05d", i))
-
-    cat("=== Processing sample", i, "of", nrow(targets), "===\n")
-    cat("Sample:", sample_label, "| Dataset:", dataset_label, "\n")
-
-    rg_set <- tryCatch({
-        read.metharray.exp(targets = sample_targets, verbose = TRUE)
-    }, error = function(e) {
-        err_msg <- conditionMessage(e)
-        cat("Initial read failed, evaluating retry strategy...\n")
-        cat("Error message:", err_msg, "\n")
-
-        if (grepl("different array size", err_msg, ignore.case = TRUE)) {
-            cat("Detected mixed array size input. Retrying with force=TRUE...\n")
-            return(read.metharray.exp(targets = sample_targets, verbose = TRUE, force = TRUE))
-        }
-
-        stop(
-            paste0(
-                "Failed to read IDAT files for sample '", sample_label, "'. ",
-                "Original error: ", err_msg
-            )
+    stop(
+        paste0(
+            "Failed to read IDAT files for sample '", sample_label, "'. ",
+            "Original error: ", err_msg
         )
-    })
+    )
+})
 
-    cat("Created RGChannelSet with", ncol(rg_set), "sample\n")
+cat("Created RGChannelSet with", ncol(rg_set), "sample\n")
 
-    detP <- detectionP(rg_set)
-    colnames(detP) <- pData(rg_set)$sample
-    detp_out <- file.path(opt$outdir, paste0(prefix, ".detection_pvalues.tsv"))
-    fwrite(as.data.table(detP, keep.rownames = "probe_id"), file = detp_out, sep = "\t")
-    cat("Saved detection p-values to", basename(detp_out), "\n")
+detP <- detectionP(rg_set)
+colnames(detP) <- pData(rg_set)$sample
+detp_out <- file.path(opt$outdir, paste0(opt$out_prefix, ".detection_pvalues.tsv"))
+fwrite(as.data.table(detP, keep.rownames = "probe_id"), file = detp_out, sep = "\t")
+cat("Saved detection p-values to", basename(detp_out), "\n")
 
-    rm(detP)
-    invisible(gc())
+rm(detP)
+invisible(gc())
 
-    m_set <- preprocessFunnorm(rg_set)
-    beta <- getBeta(m_set)
-    colnames(beta) <- pData(m_set)$sample
-    beta_out <- file.path(opt$outdir, paste0(prefix, ".normalized_betas.tsv"))
-    fwrite(as.data.table(beta, keep.rownames = "probe_id"), file = beta_out, sep = "\t")
-    cat("Saved normalized betas to", basename(beta_out), "\n\n")
+m_set <- preprocessFunnorm(rg_set)
+beta <- getBeta(m_set)
+colnames(beta) <- pData(m_set)$sample
+beta_out <- file.path(opt$outdir, paste0(opt$out_prefix, ".normalized_betas.tsv"))
+fwrite(as.data.table(beta, keep.rownames = "probe_id"), file = beta_out, sep = "\t")
+cat("Saved normalized betas to", basename(beta_out), "\n\n")
 
-    rm(m_set, rg_set, beta)
-    invisible(gc())
-}
+rm(m_set, rg_set, beta)
+invisible(gc())
 
 cat("=== Preprocessing complete ===\n")
