@@ -7,11 +7,10 @@ process CONCATENATE_DNAM {
         'biocontainers/pandas:1.5.2' }"
 
     input:
-    tuple val(dataset_name), val(sample_names), val(beta_matrix_paths), val(pvals_paths)
+    tuple val(dataset_name), val(sample_names), val(beta_matrix_paths)
 
     output:
     path "${dataset_name}.beta_matrix.tsv", emit: beta_matrix
-    path "${dataset_name}.detection_pvals.tsv", emit: detection_pvals, optional: true
     val dataset_name, emit: dataset_name
     path "versions.yml", emit: versions
 
@@ -22,11 +21,6 @@ process CONCATENATE_DNAM {
     def beta_mapping_entries = [sample_names, beta_matrix_paths].transpose().collect { sample_name, file_path ->
         "[\"${file_path.toString()}\", \"${sample_name.toString()}\"]"
     }.join(", ")
-    def pval_mapping_entries = [sample_names, pvals_paths].transpose().findAll { _sample_name, file_path ->
-        file_path
-    }.collect { sample_name, file_path ->
-        "[\"${file_path.toString()}\", \"${sample_name.toString()}\"]"
-    }.join(", ")
     """
     #!/usr/bin/env python3
 
@@ -34,7 +28,6 @@ import pandas as pd
 import sys
 
 beta_inputs = [${beta_mapping_entries}]
-pval_inputs = [${pval_mapping_entries}]
 
 def extract_sample_series(file_path, sample_name):
     dataframe = pd.read_csv(file_path, sep="\t")
@@ -72,7 +65,6 @@ def concatenate(inputs, output_file):
     return True
 
 concatenate(beta_inputs, "${dataset_name}.beta_matrix.tsv")
-concatenate(pval_inputs, "${dataset_name}.detection_pvals.tsv")
 
 import pandas
 with open("versions.yml", "w") as f:
@@ -84,7 +76,6 @@ with open("versions.yml", "w") as f:
     stub:
     """
     touch ${dataset_name}.beta_matrix.tsv
-    touch ${dataset_name}.detection_pvals.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -123,8 +123,29 @@ workflow DNAM {
     )
     ch_versions = ch_versions.mix(FILTER_COMMON_PROBES.out.versions)
 
+    ch_common_filtered_by_dataset = FILTER_COMMON_PROBES.out.filtered_betas
+        .groupTuple()
+        .map { dataset_name, sample_names, beta_paths ->
+            [
+                dataset_name,
+                sample_names,
+                beta_paths.collect { beta_path -> beta_path.toString() }
+            ]
+        }
+
+    CONCATENATE_DNAM (
+        ch_common_filtered_by_dataset
+    )
+    ch_versions = ch_versions.mix(CONCATENATE_DNAM.out.versions)
+
+    ch_dataset_betas_for_missing = CONCATENATE_DNAM.out.beta_matrix
+        .map { beta_matrix ->
+            def dataset_name = beta_matrix.baseName.replaceFirst(/\.beta_matrix$/, '')
+            [dataset_name, dataset_name, beta_matrix]
+        }
+
     FILTER_BY_MISSING (
-        FILTER_COMMON_PROBES.out.filtered_betas
+        ch_dataset_betas_for_missing
     )
     ch_versions = ch_versions.mix(FILTER_BY_MISSING.out.versions)
 
@@ -132,22 +153,6 @@ workflow DNAM {
         FILTER_BY_MISSING.out.missing_filtered_betas
     )
     ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
-
-    ch_filtered_by_dataset = FILTER_BY_VARIANCE.out.variance_filtered_betas
-        .groupTuple()
-        .map { dataset_name, sample_names, beta_paths ->
-            [
-                dataset_name,
-                sample_names,
-                beta_paths.collect { beta_path -> beta_path.toString() },
-                sample_names.collect { _sample_name -> null }
-            ]
-        }
-
-    CONCATENATE_DNAM (
-        ch_filtered_by_dataset
-    )
-    ch_versions = ch_versions.mix(CONCATENATE_DNAM.out.versions)
 
     //
     // Collate and save software versions
