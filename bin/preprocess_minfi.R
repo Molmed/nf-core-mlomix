@@ -177,95 +177,71 @@ if (length(bad_files) > 0) {
 }
 cat("All IDAT files are parseable.\n\n")
 
-result <- tryCatch({
-    # Attempt parallel read first (faster for small-to-medium datasets)
-    cat("Attempting parallel read...\n")
-    read.metharray.exp(targets = targets, verbose = TRUE)
-}, error = function(e) {
-    # Handle known import errors with targeted retries.
-    cat("Initial read failed, evaluating retry strategy...\n")
-    err_msg <- conditionMessage(e)
-    cat("Error message:", err_msg, "\n")
+slugify <- function(value, fallback = "value") {
+    value <- as.character(value)
+    if (length(value) == 0 || is.na(value) || trimws(value) == "") {
+        value <- fallback
+    }
+    value <- gsub("[^A-Za-z0-9._-]", "_", trimws(value))
+    if (value == "") {
+        value <- fallback
+    }
+    value
+}
 
-    element_idx <- suppressWarnings(as.integer(sub(".*element index: ([0-9]+).*", "\\1", err_msg)))
-    if (!is.na(element_idx)) {
-        # BiocParallel element index is 1-based for list-like inputs.
-        row_idx <- element_idx
-        if (row_idx >= 1 && row_idx <= nrow(targets)) {
-            cat(
-                "Likely failing sample from parallel stage -> row", row_idx,
-                "sample=", safe_sample_label(targets, row_idx),
-                "basename=", targets$Basename[row_idx],
-                "\n"
-            )
+cat("Processing samples one-by-one...\n\n")
+
+for (i in seq_len(nrow(targets))) {
+    sample_targets <- targets[i, , drop = FALSE]
+    sample_label <- safe_sample_label(targets, i)
+    dataset_label <- if ("dataset" %in% colnames(targets)) as.character(targets$dataset[i]) else "dataset"
+    dataset_slug <- slugify(dataset_label, "dataset")
+    sample_slug <- slugify(sample_label, paste0("sample_", i))
+    prefix <- paste0(dataset_slug, "__", sample_slug, "__row", sprintf("%05d", i))
+
+    cat("=== Processing sample", i, "of", nrow(targets), "===\n")
+    cat("Sample:", sample_label, "| Dataset:", dataset_label, "\n")
+
+    rg_set <- tryCatch({
+        read.metharray.exp(targets = sample_targets, verbose = TRUE)
+    }, error = function(e) {
+        err_msg <- conditionMessage(e)
+        cat("Initial read failed, evaluating retry strategy...\n")
+        cat("Error message:", err_msg, "\n")
+
+        if (grepl("different array size", err_msg, ignore.case = TRUE)) {
+            cat("Detected mixed array size input. Retrying with force=TRUE...\n")
+            return(read.metharray.exp(targets = sample_targets, verbose = TRUE, force = TRUE))
         }
-    }
 
-    if (grepl("different array size", err_msg, ignore.case = TRUE)) {
-        cat("Detected mixed array size input. Retrying with force=TRUE...\n")
-        return(read.metharray.exp(targets = targets, verbose = TRUE, force = TRUE))
-    }
-
-    stop(
-        paste0(
-            "Failed to read IDAT files with minfi. ",
-            "If this is a mixed-array dataset, enable force import.\n",
-            "Original error: ", err_msg
+        stop(
+            paste0(
+                "Failed to read IDAT files for sample '", sample_label, "'. ",
+                "Original error: ", err_msg
+            )
         )
-    )
-})
+    })
 
-rg_set <- result
-cat("Created RGChannelSet with", ncol(rg_set), "samples\n\n")
+    cat("Created RGChannelSet with", ncol(rg_set), "sample\n")
 
-# Save RGChannelSet
-saveRDS(rg_set, file = file.path(opt$outdir, "rgset.rds"))
-cat("Saved RGChannelSet to rgset.rds\n")
+    detP <- detectionP(rg_set)
+    colnames(detP) <- pData(rg_set)$sample
+    detp_out <- file.path(opt$outdir, paste0(prefix, ".detection_pvalues.tsv"))
+    fwrite(as.data.table(detP, keep.rownames = "probe_id"), file = detp_out, sep = "\t")
+    cat("Saved detection p-values to", basename(detp_out), "\n")
 
-# Generate QC report
-cat("Generating QC report...\n")
-pdf(file.path(opt$outdir, "qc_report.pdf"), width = 10, height = 8)
+    rm(detP)
+    invisible(gc())
 
-# QC plot
-qc <- getQC(preprocessRaw(rg_set))
-plotQC(qc)
+    m_set <- preprocessFunnorm(rg_set)
+    beta <- getBeta(m_set)
+    colnames(beta) <- pData(m_set)$sample
+    beta_out <- file.path(opt$outdir, paste0(prefix, ".normalized_betas.tsv"))
+    fwrite(as.data.table(beta, keep.rownames = "probe_id"), file = beta_out, sep = "\t")
+    cat("Saved normalized betas to", basename(beta_out), "\n\n")
 
-# Density plot of beta values (raw)
-densityPlot(rg_set, main = "Raw Beta Values Density")
+    rm(m_set, rg_set, beta)
+    invisible(gc())
+}
 
-dev.off()
-cat("Saved QC report to qc_report.pdf\n\n")
-
-# Calculate detection p-values
-cat("Computing detection p-values...\n")
-detP <- detectionP(rg_set)
-colnames(detP) <- pData(rg_set)$sample
-cat("Detection p-values matrix:", nrow(detP), "probes x", ncol(detP), "samples\n")
-
-# Save the detection p-values to separate file
-fwrite(as.data.table(detP, keep.rownames = "probe_id"), file = file.path(opt$outdir, "detection_pvalues.tsv"), sep = "\t")
-cat("Saved detection p-values to detection_pvalues.tsv\n\n")
-
-# Release large matrix before functional normalization to reduce peak RAM usage.
-rm(detP)
-invisible(gc())
-
-# Preprocess with functional normalization (includes Noob + dye bias correction)
-# This returns GenomicRatioSet and therefore ratioConvert not needed
-cat("Performing functional normalization...\n")
-m_set <- preprocessFunnorm(rg_set)
-
-# Extract beta values that are baked in the object (GenomicRatioSet) produced in preprocessFunnorm()
-beta <- getBeta(m_set)
-colnames(beta) <- pData(m_set)$sample
-cat("Extracted beta values matrix:", nrow(beta), "probes x", ncol(beta), "samples\n")
-
-# Free intermediate object before converting/writing beta table.
-rm(m_set)
-invisible(gc())
-
-# Save normalized beta values
-fwrite(as.data.table(beta, keep.rownames = "probe_id"), file = file.path(opt$outdir, "normalized_betas.tsv"), sep = "\t")
-cat("Saved normalized beta values to normalized_betas.tsv\n")
-
-cat("\n=== Preprocessing complete ===\n")
+cat("=== Preprocessing complete ===\n")

@@ -11,30 +11,88 @@ import pandas as pd
 
 
 def main():
-    parser = argparse.ArgumentParser(description="P-value correction for beta values")
-    parser.add_argument("--betas", required=True, help="TSV file of normalized beta values")
-    parser.add_argument("--pvals", required=True, help="TSV file of detection p-values")
-    parser.add_argument("--threshold", type=float, default=0.01, help="P-value threshold (default: 0.01)")
+    parser = argparse.ArgumentParser(
+        description="P-value correction for beta values"
+    )
+    parser.add_argument(
+        "--betas",
+        required=True,
+        help="TSV file of normalized beta values",
+    )
+    parser.add_argument(
+        "--pvals",
+        required=True,
+        help="TSV file of detection p-values",
+    )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=0.01,
+        help="P-value threshold (default: 0.01)",
+    )
+    parser.add_argument(
+        "--sample-name",
+        default=None,
+        help="Optional explicit sample name for single-sample files",
+    )
     parser.add_argument("--outdir", default=".", help="Output directory")
     args = parser.parse_args()
 
     print("=== P-value Correction ===")
     print(f"Beta values file: {args.betas}")
     print(f"Detection p-values file: {args.pvals}")
+    if args.sample_name:
+        print(f"Sample name: {args.sample_name}")
     print(f"P-value threshold: {args.threshold}\n")
 
     # Read input files
     beta_df = pd.read_csv(args.betas, sep="\t", index_col=0)
     pval_df = pd.read_csv(args.pvals, sep="\t", index_col=0)
 
-    print(f"Beta matrix: {beta_df.shape[0]} probes x {beta_df.shape[1]} samples")
-    print(f"P-value matrix: {pval_df.shape[0]} probes x {pval_df.shape[1]} samples\n")
+    print(
+        f"Beta matrix: {beta_df.shape[0]} probes x {beta_df.shape[1]} samples"
+    )
+    print(
+        f"P-value matrix: {pval_df.shape[0]} probes x "
+        f"{pval_df.shape[1]} samples\n"
+    )
 
-    # Align matrices on shared probes and samples
+    if args.sample_name and beta_df.shape[1] == 1:
+        beta_df = beta_df.copy()
+        beta_df.columns = [args.sample_name]
+
+    if args.sample_name and pval_df.shape[1] == 1:
+        pval_df = pval_df.copy()
+        pval_df.columns = [args.sample_name]
+
+    # Align matrices on shared probes and samples.
+    # Preserve the beta-file probe order as the canonical output order.
     common_probes = beta_df.index.intersection(pval_df.index)
     common_samples = beta_df.columns.intersection(pval_df.columns)
+
+    if (
+        len(common_samples) == 0
+        and beta_df.shape[1] == 1
+        and pval_df.shape[1] == 1
+    ):
+        # Per-sample files can legitimately carry different column labels;
+        # align the only columns by position.
+        print(
+            "No shared sample column names found, but both files contain "
+            "a single sample. Aligning by position."
+        )
+        common_samples = beta_df.columns
+        pval_df = pval_df.copy()
+        pval_df.columns = beta_df.columns
+
     beta_df = beta_df.loc[common_probes, common_samples]
-    pval_df = pval_df.loc[common_probes, common_samples]
+    pval_df = pval_df.reindex(index=beta_df.index, columns=common_samples)
+
+    if pval_df.isna().all(axis=None):
+        raise ValueError(
+            "Detection p-values could not be aligned to beta probes. "
+            "Check that the beta and p-value files belong to the same sample."
+        )
 
     print(f"Common probes: {len(common_probes)}")
     print(f"Common samples: {len(common_samples)}\n")

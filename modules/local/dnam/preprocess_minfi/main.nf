@@ -11,10 +11,8 @@ process PREPROCESS_MINFI {
     path samplesheet
 
     output:
-    path "rgset.rds"              , emit: rgset
-    path "normalized_betas.tsv"   , emit: betas
-    path "detection_pvalues.tsv"  , emit: detection_pvals
-    path "qc_report.pdf"          , emit: qc_report
+    path "*.normalized_betas.tsv"  , emit: betas
+    path "*.detection_pvalues.tsv" , emit: detection_pvals
     path "versions.yml"           , emit: versions
 
     when:
@@ -36,10 +34,8 @@ process PREPROCESS_MINFI {
 
     stub:
     """
-    touch rgset.rds
-    touch normalized_betas.tsv
-    touch detection_pvalues.tsv
-    touch qc_report.pdf
+    touch sample_001.normalized_betas.tsv
+    touch sample_001.detection_pvalues.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

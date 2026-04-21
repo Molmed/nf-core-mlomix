@@ -28,29 +28,44 @@ workflow DNAM {
     ch_versions = channel.empty()
 
     //
-    // MODULE: Concatenate precomputed DNAm matrices by sample
+    // Build per-sample DNAm channels from precomputed inputs
     //
     ch_precomputed_rows = ch_samplesheet
         .flatMap { rows -> (rows instanceof List) ? rows : [rows] }
-        .filter { row -> row['dnam_beta_matrix_file'] || row['dnam_pvals_file'] }
+        .filter { row -> row['dnam_beta_matrix_file'] }
 
-    ch_precomputed_rows
-        .map { row -> [row['dataset'], row] }
-        .groupTuple()
-        .map { dataset ->
+    ch_precomputed_pairs = ch_precomputed_rows
+        .filter { row -> row['dnam_pvals_file'] }
+        .map { row ->
+            def dataset_name = row['dataset'] == null ? 'dataset' : row['dataset'].toString().trim()
+            dataset_name = dataset_name ? dataset_name : 'dataset'
+            dataset_name = dataset_name.replaceAll(/[^A-Za-z0-9._-]/, '_')
+            def sample_name = row['id'] == null ? 'sample' : row['id'].toString().trim()
+            sample_name = sample_name ? sample_name : 'sample'
+            sample_name = sample_name.replaceAll(/[^A-Za-z0-9._-]/, '_')
             [
-                dataset[0],
-                dataset[1].collect { sample -> sample['id'] },
-                dataset[1].collect { sample -> file(sample['dnam_beta_matrix_file'], checkIfExists: true).toString() },
-                dataset[1].collect { sample -> sample['dnam_pvals_file'] ? file(sample['dnam_pvals_file'], checkIfExists: true).toString() : null }
+                dataset_name,
+                sample_name,
+                file(row['dnam_beta_matrix_file'], checkIfExists: true),
+                file(row['dnam_pvals_file'], checkIfExists: true)
             ]
         }
-        .set { ch_precomputed_dnam }
 
-    CONCATENATE_DNAM (
-        ch_precomputed_dnam
-    )
-    ch_versions = ch_versions.mix(CONCATENATE_DNAM.out.versions)
+    ch_precomputed_beta_only = ch_precomputed_rows
+        .filter { row -> !row['dnam_pvals_file'] }
+        .map { row ->
+            def dataset_name = row['dataset'] == null ? 'dataset' : row['dataset'].toString().trim()
+            dataset_name = dataset_name ? dataset_name : 'dataset'
+            dataset_name = dataset_name.replaceAll(/[^A-Za-z0-9._-]/, '_')
+            def sample_name = row['id'] == null ? 'sample' : row['id'].toString().trim()
+            sample_name = sample_name ? sample_name : 'sample'
+            sample_name = sample_name.replaceAll(/[^A-Za-z0-9._-]/, '_')
+            [
+                dataset_name,
+                sample_name,
+                file(row['dnam_beta_matrix_file'], checkIfExists: true)
+            ]
+        }
 
     //
     // MODULE: Preprocess methylation array data with minfi
@@ -58,9 +73,17 @@ workflow DNAM {
     ch_samplesheet_for_minfi = ch_samplesheet
         .flatMap { rows -> (rows instanceof List) ? rows : [rows] }
         .filter { row -> row['sentrix_id'] || row['sentrix_position'] || row['idats_basename'] }
-        .map { row -> "${row['id']},${row['sentrix_id']},${row['sentrix_position']},${row['idats_basename']}" }
+        .map { row ->
+            def dataset_name = row['dataset'] == null ? 'dataset' : row['dataset'].toString().trim()
+            dataset_name = dataset_name ? dataset_name : 'dataset'
+            dataset_name = dataset_name.replaceAll(/[^A-Za-z0-9._-]/, '_')
+            def sample_name = row['id'] == null ? 'sample' : row['id'].toString().trim()
+            sample_name = sample_name ? sample_name : 'sample'
+            sample_name = sample_name.replaceAll(/[^A-Za-z0-9._-]/, '_')
+            "${sample_name},${dataset_name},${row['sentrix_id']},${row['sentrix_position']},${row['idats_basename']}"
+        }
         .collect()
-        .map { lines -> "sample,sentrix_id,sentrix_position,idats_basename\n${lines.join('\n')}\n" }
+        .map { lines -> "sample,dataset,sentrix_id,sentrix_position,idats_basename\n${lines.join('\n')}\n" }
         .collectFile(
             storeDir: "${params.outdir}/dnam",
             name: 'idat_samplesheet.csv',
@@ -72,50 +95,63 @@ workflow DNAM {
     )
     ch_versions = ch_versions.mix(PREPROCESS_MINFI.out.versions)
 
-    ch_precomputed_beta_by_dataset = CONCATENATE_DNAM.out.beta_matrix
+    ch_minfi_beta_by_key = PREPROCESS_MINFI.out.betas
         .map { beta ->
-            def dataset_name = beta.baseName.replaceFirst(/\.beta_matrix$/, '')
-            [dataset_name, beta]
+            def key = beta.baseName.replaceFirst(/\.normalized_betas$/, '')
+            [key, beta]
         }
 
-    ch_precomputed_pvals_by_dataset = CONCATENATE_DNAM.out.detection_pvals
+    ch_minfi_pvals_by_key = PREPROCESS_MINFI.out.detection_pvals
         .map { detection_pvals ->
-            def dataset_name = detection_pvals.baseName.replaceFirst(/\.detection_pvals$/, '')
-            [dataset_name, detection_pvals]
+            def key = detection_pvals.baseName.replaceFirst(/\.detection_pvalues$/, '')
+            [key, detection_pvals]
         }
 
-    ch_precomputed_pairs = ch_precomputed_beta_by_dataset
-        .join(ch_precomputed_pvals_by_dataset)
+    ch_minfi_pairs = ch_minfi_beta_by_key
+        .join(ch_minfi_pvals_by_key)
+        .map { key, beta, detection_pvals ->
+            def parts = key.tokenize('__')
+            def dataset_name = parts ? parts[0] : 'dataset'
+            def sample_name = parts.size() > 1 ? parts[1..-1].join('__') : key
+            [dataset_name, sample_name, beta, detection_pvals]
+        }
 
-    ch_precomputed_beta_only = ch_precomputed_beta_by_dataset
-        .join(ch_precomputed_pvals_by_dataset, remainder: true)
-        .filter { tuple_item -> tuple_item[2] == null }
-        .map { tuple_item -> tuple_item[1] }
-
-    ch_beta_for_correction = PREPROCESS_MINFI.out.betas.mix(
-        ch_precomputed_pairs.map { tuple_item -> tuple_item[1] }
-    )
-    ch_detection_for_correction = PREPROCESS_MINFI.out.detection_pvals.mix(
-        ch_precomputed_pairs.map { tuple_item -> tuple_item[2] }
-    )
+    ch_pairs_for_correction = ch_minfi_pairs.mix(ch_precomputed_pairs)
 
     //
     // MODULE: Replace beta values with NaN where detection p-value >= threshold
+    // Run per sample, then concatenate corrected betas by dataset.
     //
     P_VAL_CORRECTION (
-        ch_beta_for_correction,
-        ch_detection_for_correction
+        ch_pairs_for_correction
     )
     ch_versions = ch_versions.mix(P_VAL_CORRECTION.out.versions)
 
-    ch_corrected_or_passthrough_betas = P_VAL_CORRECTION.out.corrected_betas.mix(ch_precomputed_beta_only)
+    ch_corrected_or_passthrough_betas = P_VAL_CORRECTION.out.corrected_betas
+        .mix(ch_precomputed_beta_only)
+
+    ch_corrected_by_dataset = ch_corrected_or_passthrough_betas
+        .groupTuple()
+        .map { dataset_name, sample_names, beta_paths ->
+            [
+                dataset_name,
+                sample_names,
+                beta_paths.collect { beta_path -> beta_path.toString() },
+                sample_names.collect { _sample_name -> null }
+            ]
+        }
+
+    CONCATENATE_DNAM (
+        ch_corrected_by_dataset
+    )
+    ch_versions = ch_versions.mix(CONCATENATE_DNAM.out.versions)
 
     //
     // MODULE: Deduplicate and filter DNAm betas by common probes, missingness, and variance
     //
     ch_common_probes = channel.fromPath(params.common_probes, checkIfExists: true)
     FILTER_BY_COMMON_MISSING_AND_VARIANCE (
-        ch_corrected_or_passthrough_betas,
+        CONCATENATE_DNAM.out.beta_matrix,
         ch_common_probes
     )
     ch_versions = ch_versions.mix(FILTER_BY_COMMON_MISSING_AND_VARIANCE.out.versions)

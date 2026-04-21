@@ -6,11 +6,10 @@ process P_VAL_CORRECTION {
     container "biocontainers/pandas:1.5.3_cv1"
 
     input:
-    path betas
-    path detection_pvals
+    tuple val(dataset_name), val(sample_name), path(betas), path(detection_pvals)
 
     output:
-    path "corrected_betas.tsv"  , emit: corrected_betas
+    tuple val(dataset_name), val(sample_name), path("${dataset_name}__${sample_name}.corrected_betas.tsv"), emit: corrected_betas
     path "versions.yml"         , emit: versions
 
     when:
@@ -19,12 +18,16 @@ process P_VAL_CORRECTION {
     script:
     def args = task.ext.args ?: ''
     def threshold = task.ext.threshold ?: '0.01'
+    def output_name = "${dataset_name}__${sample_name}.corrected_betas.tsv"
     """
     p_val_correction.py \\
+        --sample-name ${sample_name} \
         --betas ${betas} \\
         --pvals ${detection_pvals} \\
         --threshold ${threshold} \\
         ${args}
+
+    mv corrected_betas.tsv ${output_name}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -36,7 +39,7 @@ process P_VAL_CORRECTION {
 
     stub:
     """
-    touch corrected_betas.tsv
+    touch ${dataset_name}__${sample_name}.corrected_betas.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
