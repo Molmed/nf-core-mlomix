@@ -1,6 +1,7 @@
 process FLATTEN_GTF {
     tag "$gtf"
     label 'process_medium'
+    publishDir "${params.annotation_cache_dir}", mode: 'copy', overwrite: true
 
     conda "bioconda::subread=2.1.1"
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container

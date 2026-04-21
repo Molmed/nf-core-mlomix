@@ -1,6 +1,7 @@
 process DOWNLOAD_GTF {
     cache 'lenient'
     label "process_low"
+    publishDir "${params.annotation_cache_dir}", mode: 'copy', overwrite: true
 
     conda "bioconda::gnu-wget=1.18"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?

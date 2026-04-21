@@ -90,8 +90,15 @@
             "properties": {
                 "annotation_version": {
                     "type": ["integer", "string"],
+                    "default": 109,
                     "description": "Annotation release version used for GEX reference preprocessing.",
                     "fa_icon": "fas fa-list-ol"
+                },
+                "annotation_cache_dir": {
+                    "type": "string",
+                    "default": "assets/annotations",
+                    "description": "Directory for cached processed annotation assets (GTF/SAF/parsed/filtered) keyed by genome and annotation version.",
+                    "fa_icon": "far fa-folder-open"
                 },
                 "random_seed": {
                     "type": "integer",

@@ -1,6 +1,7 @@
 process PARSE_GTF {
     tag "$gtf"
     label 'process_medium'
+    publishDir "${params.annotation_cache_dir}", mode: 'copy', overwrite: true
 
     conda "bioconda::bioconductor-ballgown=2.38.0"
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container

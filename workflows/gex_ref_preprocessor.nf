@@ -24,16 +24,29 @@ workflow GEX_REF_PREPROCESSOR {
     main:
 
     ch_versions = channel.empty()
-    ch_full_genome_name = genome
+    ch_missing_genome = channel.empty()
+    ch_missing_annotation_version = channel.empty()
+    ch_full_genome_name_missing = channel.empty()
+
+    ch_cached_filtered_annotations = genome
         .combine(annotation_version)
-        .map { g, ann -> "Homo_sapiens.${g}.${ann}" }
+        .map { g, ann -> file("${params.annotation_cache_dir}/Homo_sapiens.${g}.${ann}.annotations.filtered.csv") }
+        .filter { cached -> cached.exists() }
+
+    ch_missing_refs = genome
+        .combine(annotation_version)
+        .filter { g, ann -> !file("${params.annotation_cache_dir}/Homo_sapiens.${g}.${ann}.annotations.filtered.csv").exists() }
+
+    ch_missing_genome = ch_missing_refs.map { g, _ann -> g }
+    ch_missing_annotation_version = ch_missing_refs.map { _g, ann -> ann }
+    ch_full_genome_name_missing = ch_missing_refs.map { g, ann -> "Homo_sapiens.${g}.${ann}" }
 
     //
     // MODULE: Download GTF file
     //
     DOWNLOAD_GTF (
-        genome,
-        annotation_version
+        ch_missing_genome,
+        ch_missing_annotation_version
     )
     ch_versions = ch_versions.mix(DOWNLOAD_GTF.out.versions)
 
@@ -43,7 +56,7 @@ workflow GEX_REF_PREPROCESSOR {
     // TODO: Rename gtf_file to gtf
     FLATTEN_GTF (
         DOWNLOAD_GTF.out.gtf_file,
-        ch_full_genome_name
+        ch_full_genome_name_missing
     )
     ch_versions = ch_versions.mix(FLATTEN_GTF.out.versions.first())
 
@@ -53,7 +66,7 @@ workflow GEX_REF_PREPROCESSOR {
     PARSE_GTF (
         DOWNLOAD_GTF.out.gtf_file,
         FLATTEN_GTF.out.saf,
-        ch_full_genome_name
+        ch_full_genome_name_missing
     )
     ch_versions = ch_versions.mix(PARSE_GTF.out.versions.first())
 
@@ -62,7 +75,7 @@ workflow GEX_REF_PREPROCESSOR {
     //
     FILTER_ANNOTATIONS (
         PARSE_GTF.out.annotations,
-        ch_full_genome_name
+        ch_full_genome_name_missing
     )
     ch_versions = ch_versions.mix(FILTER_ANNOTATIONS.out.versions.first())
 
@@ -78,7 +91,7 @@ workflow GEX_REF_PREPROCESSOR {
         )
 
     emit:
-    filtered_annotations = FILTER_ANNOTATIONS.out.filtered_annotations // channel: [ path(annotations.filtered.csv) ]
+    filtered_annotations = ch_cached_filtered_annotations.mix(FILTER_ANNOTATIONS.out.filtered_annotations) // channel: [ path(annotations.filtered.csv) ]
     versions           = ch_versions                          // channel: [ path(versions.yml) ]
 
 }
