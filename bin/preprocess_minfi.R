@@ -36,6 +36,19 @@ cat("=== Minfi Preprocessing ===\n")
 cat("Samplesheet:", opt$samplesheet, "\n")
 cat("Output directory:", opt$outdir, "\n\n")
 
+safe_sample_label <- function(targets, i) {
+    preferred_cols <- c("sample", "sample_id", "sample_name", "Sample_Name", "sample_name")
+    for (col in preferred_cols) {
+        if (col %in% colnames(targets)) {
+            value <- as.character(targets[[col]][i])
+            if (!is.na(value) && value != "") {
+                return(value)
+            }
+        }
+    }
+    as.character(i)
+}
+
 # Read the samplesheet (supports both CSV and TSV)
 cat("Reading samplesheet...\n")
 first_line <- readLines(opt$samplesheet, n = 1)
@@ -112,6 +125,58 @@ if (!is.null(missing_files)) {
 }
 cat("All expected IDAT files found.\n\n")
 
+cat("Validating IDAT file parseability...\n")
+bad_files <- list()
+for (i in seq_len(nrow(targets))) {
+    basename <- targets$Basename[i]
+    sample_label <- safe_sample_label(targets, i)
+    grn_file <- paste0(basename, "_Grn.idat")
+    red_file <- paste0(basename, "_Red.idat")
+
+    for (idat_file in c(grn_file, red_file)) {
+        parse_error <- tryCatch({
+            suppressWarnings(illuminaio::readIDAT(idat_file))
+            NULL
+        }, error = function(e) {
+            conditionMessage(e)
+        })
+
+        if (!is.null(parse_error)) {
+            bad_files[[length(bad_files) + 1]] <- list(
+                row = i,
+                sample = sample_label,
+                basename = basename,
+                file = idat_file,
+                error = parse_error
+            )
+        }
+    }
+}
+
+if (length(bad_files) > 0) {
+    preview <- vapply(
+        bad_files[seq_len(min(length(bad_files), 5))],
+        function(x) {
+            paste0(
+                "row ", x$row,
+                " (sample=", x$sample,
+                ", basename=", x$basename,
+                ")\n    file: ", x$file,
+                "\n    error: ", x$error
+            )
+        },
+        character(1)
+    )
+    stop(
+        paste0(
+            "Found ", length(bad_files), " unreadable IDAT file(s).\n",
+            "Examples:\n  ", paste(preview, collapse = "\n  "),
+            "\nPlease remove or replace the corrupted IDAT files and rerun."
+        )
+    )
+}
+cat("All IDAT files are parseable.\n\n")
+
 # Use SerialParam for sequential reading to avoid BiocParallel race conditions
 # This is slower but more robust for large datasets with potential file read issues
 library(BiocParallel)
@@ -123,9 +188,35 @@ result <- tryCatch({
 }, error = function(e) {
     # Fall back to serial reading on error
     cat("Parallel read failed, switching to serial mode...\n")
-    cat("Error message:", conditionMessage(e), "\n")
-    read.metharray.exp(targets = targets, verbose = TRUE,
-                       BPPARAM = BiocParallel::SerialParam())
+    err_msg <- conditionMessage(e)
+    cat("Error message:", err_msg, "\n")
+
+    element_idx <- suppressWarnings(as.integer(sub(".*element index: ([0-9]+).*", "\\1", err_msg)))
+    if (!is.na(element_idx)) {
+        # BiocParallel element index is 1-based for list-like inputs.
+        row_idx <- element_idx
+        if (row_idx >= 1 && row_idx <= nrow(targets)) {
+            cat(
+                "Likely failing sample from parallel stage -> row", row_idx,
+                "sample=", safe_sample_label(targets, row_idx),
+                "basename=", targets$Basename[row_idx],
+                "\n"
+            )
+        }
+    }
+
+    tryCatch({
+        read.metharray.exp(targets = targets, verbose = TRUE,
+                           BPPARAM = BiocParallel::SerialParam())
+    }, error = function(e2) {
+        stop(
+            paste0(
+                "Serial read also failed after parallel fallback. ",
+                "This usually indicates one or more malformed IDAT files.\n",
+                "Serial error: ", conditionMessage(e2)
+            )
+        )
+    })
 })
 
 rg_set <- result

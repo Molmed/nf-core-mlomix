@@ -68,12 +68,16 @@ process UMAP {
 
             labels = self._labels
 
+            # Align data and labels by common sample names
+            common_samples = data.index.intersection(labels.index)
+            if len(common_samples) == 0:
+                raise ValueError(f"No common samples between data ({len(data)} rows) and labels ({len(labels)} rows)")
+
+            data = data.loc[common_samples].sort_index()
+            labels = labels.loc[common_samples].sort_index()
+
             palette = glasbey.create_palette(palette_size=len(labels.unique()))
             colormap = dict(zip(labels.unique(), palette))
-
-            # Sort the data and label by sample name
-            data = data.sort_index()
-            labels = labels.sort_index()
 
             # Normalize and scale the data
             scaler = StandardScaler()
