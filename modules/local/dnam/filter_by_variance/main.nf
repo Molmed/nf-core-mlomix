@@ -6,26 +6,37 @@ process FILTER_BY_VARIANCE {
     container "biocontainers/matplotlib:3.7.1"
 
     input:
-    path betas
+    tuple val(dataset_name), val(sample_name), path(betas)
 
     output:
-    path "variance_filtered_betas.tsv"                   , emit: variance_filtered_betas
-    path "variance_distribution_before_filtering.png"    , emit: variance_plot_before_png
-    path "variance_distribution_before_filtering.svg"    , emit: variance_plot_before_svg
-    path "variance_distribution_after_filtering.png"     , emit: variance_plot_after_png
-    path "variance_distribution_after_filtering.svg"     , emit: variance_plot_after_svg
-    path "versions.yml"                                  , emit: versions
+    tuple val(dataset_name), val(sample_name), path("${dataset_name}__${sample_name}.variance_filtered_betas.tsv"), emit: variance_filtered_betas
+    path "${dataset_name}__${sample_name}.variance_distribution_before_filtering.png"  , emit: variance_plot_before_png
+    path "${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg"  , emit: variance_plot_before_svg
+    path "${dataset_name}__${sample_name}.variance_distribution_after_filtering.png"   , emit: variance_plot_after_png
+    path "${dataset_name}__${sample_name}.variance_distribution_after_filtering.svg"   , emit: variance_plot_after_svg
+    path "versions.yml"                                                                , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
+    def beta_output_name = "${dataset_name}__${sample_name}.variance_filtered_betas.tsv"
+    def before_png_name = "${dataset_name}__${sample_name}.variance_distribution_before_filtering.png"
+    def before_svg_name = "${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg"
+    def after_png_name = "${dataset_name}__${sample_name}.variance_distribution_after_filtering.png"
+    def after_svg_name = "${dataset_name}__${sample_name}.variance_distribution_after_filtering.svg"
     """
     filter_by_variance.py \
         --betas ${betas} \
         --variance_threshold ${params.variance_threshold} \
         ${args}
+
+    mv variance_filtered_betas.tsv ${beta_output_name}
+    mv variance_distribution_before_filtering.png ${before_png_name}
+    mv variance_distribution_before_filtering.svg ${before_svg_name}
+    mv variance_distribution_after_filtering.png ${after_png_name}
+    mv variance_distribution_after_filtering.svg ${after_svg_name}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -37,11 +48,11 @@ process FILTER_BY_VARIANCE {
 
     stub:
     """
-    touch variance_filtered_betas.tsv
-    touch variance_distribution_before_filtering.png
-    touch variance_distribution_before_filtering.svg
-    touch variance_distribution_after_filtering.png
-    touch variance_distribution_after_filtering.svg
+    touch ${dataset_name}__${sample_name}.variance_filtered_betas.tsv
+    touch ${dataset_name}__${sample_name}.variance_distribution_before_filtering.png
+    touch ${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg
+    touch ${dataset_name}__${sample_name}.variance_distribution_after_filtering.png
+    touch ${dataset_name}__${sample_name}.variance_distribution_after_filtering.svg
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -6,22 +6,25 @@ process FILTER_BY_MISSING {
     container "biocontainers/pandas:1.5.3_cv1"
 
     input:
-    path betas
+    tuple val(dataset_name), val(sample_name), path(betas)
 
     output:
-    path "missing_filtered_betas.tsv", emit: missing_filtered_betas
-    path "versions.yml"            , emit: versions
+    tuple val(dataset_name), val(sample_name), path("${dataset_name}__${sample_name}.missing_filtered_betas.tsv"), emit: missing_filtered_betas
+    path "versions.yml"             , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
+    def output_name = "${dataset_name}__${sample_name}.missing_filtered_betas.tsv"
     """
     filter_by_missing.py \
         --betas ${betas} \
         --missing_threshold ${params.missing_threshold} \
         ${args}
+
+    mv missing_filtered_betas.tsv ${output_name}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -32,7 +35,7 @@ process FILTER_BY_MISSING {
 
     stub:
     """
-    touch missing_filtered_betas.tsv
+    touch ${dataset_name}__${sample_name}.missing_filtered_betas.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

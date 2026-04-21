@@ -6,7 +6,9 @@
 include { PREPROCESS_MINFI       } from '../modules/local/dnam/preprocess_minfi/main'
 include { CONCATENATE_DNAM       } from '../modules/local/dnam/concatenate_dnam'
 include { P_VAL_CORRECTION       } from '../modules/local/dnam/p_val_correction/main'
-include { FILTER_BY_COMMON_MISSING_AND_VARIANCE } from '../modules/local/dnam/filter_by_common_missing_and_variance/main'
+include { FILTER_COMMON_PROBES   } from '../modules/local/dnam/filter_common_probes/main'
+include { FILTER_BY_MISSING      } from '../modules/local/dnam/filter_by_missing/main'
+include { FILTER_BY_VARIANCE     } from '../modules/local/dnam/filter_by_variance/main'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 
 /*
@@ -110,7 +112,28 @@ workflow DNAM {
     ch_corrected_or_passthrough_betas = P_VAL_CORRECTION.out.corrected_betas
         .mix(ch_precomputed_beta_only)
 
-    ch_corrected_by_dataset = ch_corrected_or_passthrough_betas
+    //
+    // MODULE: Filter DNAm betas per sample (common probes -> missingness -> variance)
+    //
+    ch_common_probes = channel.value(file(params.common_probes, checkIfExists: true))
+
+    FILTER_COMMON_PROBES (
+        ch_corrected_or_passthrough_betas,
+        ch_common_probes
+    )
+    ch_versions = ch_versions.mix(FILTER_COMMON_PROBES.out.versions)
+
+    FILTER_BY_MISSING (
+        FILTER_COMMON_PROBES.out.filtered_betas
+    )
+    ch_versions = ch_versions.mix(FILTER_BY_MISSING.out.versions)
+
+    FILTER_BY_VARIANCE (
+        FILTER_BY_MISSING.out.missing_filtered_betas
+    )
+    ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
+
+    ch_filtered_by_dataset = FILTER_BY_VARIANCE.out.variance_filtered_betas
         .groupTuple()
         .map { dataset_name, sample_names, beta_paths ->
             [
@@ -122,19 +145,9 @@ workflow DNAM {
         }
 
     CONCATENATE_DNAM (
-        ch_corrected_by_dataset
+        ch_filtered_by_dataset
     )
     ch_versions = ch_versions.mix(CONCATENATE_DNAM.out.versions)
-
-    //
-    // MODULE: Deduplicate and filter DNAm betas by common probes, missingness, and variance
-    //
-    ch_common_probes = channel.fromPath(params.common_probes, checkIfExists: true)
-    FILTER_BY_COMMON_MISSING_AND_VARIANCE (
-        CONCATENATE_DNAM.out.beta_matrix,
-        ch_common_probes
-    )
-    ch_versions = ch_versions.mix(FILTER_BY_COMMON_MISSING_AND_VARIANCE.out.versions)
 
     //
     // Collate and save software versions

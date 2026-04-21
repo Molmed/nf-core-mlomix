@@ -6,23 +6,27 @@ process FILTER_COMMON_PROBES {
     container "biocontainers/pandas:1.5.3_cv1"
 
     input:
-    path betas
+    tuple val(dataset_name), val(sample_name), path(betas)
     path probe_list
 
     output:
-    path "filtered_betas.tsv"  , emit: filtered_betas
-    path "versions.yml"        , emit: versions
+    tuple val(dataset_name), val(sample_name), path("${dataset_name}__${sample_name}.filtered_betas.tsv"), emit: filtered_betas
+    path "versions.yml"         , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
+    def output_name = "${dataset_name}__${sample_name}.filtered_betas.tsv"
     """
     filter_common_probes.py \\
+        --sample-name ${sample_name} \\
         --betas ${betas} \\
         --probes ${probe_list} \\
         ${args}
+
+    mv filtered_betas.tsv ${output_name}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -34,7 +38,7 @@ process FILTER_COMMON_PROBES {
 
     stub:
     """
-    touch filtered_betas.tsv
+    touch ${dataset_name}__${sample_name}.filtered_betas.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

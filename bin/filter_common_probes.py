@@ -3,15 +3,57 @@
 """
 Filter common probes across methylation array platforms.
 
-1. Deduplicates probes by averaging duplicate columns (e.g. EPIC v2 replicate probes)
-2. Filters to only probes present in a reference probe list (e.g. probes common to 450K, EPIC v1, EPIC v2)
+1. Deduplicates probes by averaging duplicate columns
+   (e.g. EPIC v2 replicate probes).
+2. Filters to probes present in a reference probe list
+   (e.g. probes common to 450K, EPIC v1, EPIC v2).
 """
 
 import argparse
 import os
 
-import numpy as np
 import pandas as pd
+
+
+def read_beta_matrix(
+    file_path: str,
+    sample_name: str | None = None,
+) -> pd.DataFrame:
+    """Read beta matrix robustly for single-sample inputs."""
+    preview_df = pd.read_csv(file_path, sep="\t")
+
+    if preview_df.shape[1] < 2:
+        raise ValueError(
+            "Expected at least 2 columns in beta file, got "
+            f"{preview_df.shape[1]}"
+        )
+
+    first_col = str(preview_df.columns[0])
+
+    # Headerless two-column files are read with the first probe ID
+    # as the second-column header.
+    looks_like_probe_id = first_col.lower().startswith(("cg", "ch", "rs"))
+    if (
+        first_col != "probe_id"
+        and preview_df.shape[1] == 2
+        and looks_like_probe_id
+    ):
+        inferred_name = sample_name or "sample"
+        beta_df = pd.read_csv(
+            file_path,
+            sep="\t",
+            header=None,
+            names=["probe_id", inferred_name],
+        )
+    else:
+        beta_df = preview_df
+        if beta_df.columns[0] != "probe_id":
+            beta_df = beta_df.rename(columns={beta_df.columns[0]: "probe_id"})
+        if sample_name and beta_df.shape[1] == 2:
+            beta_df = beta_df.rename(columns={beta_df.columns[1]: sample_name})
+
+    beta_df = beta_df.set_index("probe_id")
+    return beta_df
 
 
 def deduplicate_probes(beta_df: pd.DataFrame) -> pd.DataFrame:
@@ -21,7 +63,10 @@ def deduplicate_probes(beta_df: pd.DataFrame) -> pd.DataFrame:
     n_after = beta_df.shape[1]
     n_dupes = n_before - n_after
     if n_dupes > 0:
-        print(f"Deduplicated {n_dupes} duplicate probe columns ({n_before} -> {n_after})")
+        print(
+            "Deduplicated "
+            f"{n_dupes} duplicate probe columns ({n_before} -> {n_after})"
+        )
     else:
         print("No duplicate probe columns found")
     return beta_df
@@ -33,14 +78,32 @@ def filter_probes(beta_df: pd.DataFrame, probe_list: list) -> pd.DataFrame:
     n_before = beta_df.shape[0]
     beta_df = beta_df.loc[probe_intersection]
     n_after = beta_df.shape[0]
-    print(f"Filtered probes: {n_before} -> {n_after} ({n_before - n_after} removed)")
+    print(
+        f"Filtered probes: {n_before} -> {n_after} "
+        f"({n_before - n_after} removed)"
+    )
     return beta_df
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Filter common probes across platforms")
-    parser.add_argument("--betas", required=True, help="TSV file of beta values (probe_id as index)")
-    parser.add_argument("--probes", required=True, help="Text file with one probe ID per line")
+    parser = argparse.ArgumentParser(
+        description="Filter common probes across platforms"
+    )
+    parser.add_argument(
+        "--betas",
+        required=True,
+        help="TSV file of beta values (probe_id as index)",
+    )
+    parser.add_argument(
+        "--probes",
+        required=True,
+        help="Text file with one probe ID per line",
+    )
+    parser.add_argument(
+        "--sample-name",
+        default=None,
+        help="Optional sample name for single-sample input files",
+    )
     parser.add_argument("--outdir", default=".", help="Output directory")
     args = parser.parse_args()
 
@@ -49,21 +112,35 @@ def main():
     print(f"Probe list file: {args.probes}\n")
 
     # Read beta values
-    beta_df = pd.read_csv(args.betas, sep="\t", index_col=0)
-    print(f"Input beta matrix: {beta_df.shape[0]} probes x {beta_df.shape[1]} samples\n")
+    beta_df = read_beta_matrix(args.betas, args.sample_name)
+    print(
+        f"Input beta matrix: {beta_df.shape[0]} probes x "
+        f"{beta_df.shape[1]} samples\n"
+    )
 
     # Step 1: Deduplicate probes
     print("Step 1: Deduplicating probes...")
     beta_df = deduplicate_probes(beta_df)
-    print(f"Matrix after dedup: {beta_df.shape[0]} probes x {beta_df.shape[1]} samples\n")
+    print(
+        f"Matrix after dedup: {beta_df.shape[0]} probes x "
+        f"{beta_df.shape[1]} samples\n"
+    )
 
     # Step 2: Filter to common probes
     print("Step 2: Filtering to common probes...")
-    probes_to_keep = pd.read_csv(args.probes, sep="\t", header=None, names=["probe_id"])
+    probes_to_keep = pd.read_csv(
+        args.probes,
+        sep="\t",
+        header=None,
+        names=["probe_id"],
+    )
     probe_list = probes_to_keep["probe_id"].tolist()
     print(f"Reference probe list: {len(probe_list)} probes")
     beta_df = filter_probes(beta_df, probe_list)
-    print(f"Matrix after filtering: {beta_df.shape[0]} probes x {beta_df.shape[1]} samples\n")
+    print(
+        f"Matrix after filtering: {beta_df.shape[0]} probes x "
+        f"{beta_df.shape[1]} samples\n"
+    )
 
     # Save output
     output_file = os.path.join(args.outdir, "filtered_betas.tsv")
