@@ -26,13 +26,26 @@ import sys
 
 dataframe = pd.read_csv("${betas}", sep="\t")
 
-if "probe_id" in dataframe.columns:
-    dataframe = dataframe.set_index("probe_id")
-else:
-    dataframe = dataframe.set_index(dataframe.columns[0])
+if dataframe.shape[1] < 2:
+    raise ValueError(
+        f"Expected at least 2 columns in ${betas}, got {dataframe.shape[1]}"
+    )
+
+first_col = str(dataframe.columns[0])
+looks_like_probe_id = first_col.lower().startswith(("cg", "ch", "rs"))
+
+if first_col != "probe_id" and looks_like_probe_id:
+    dataframe = pd.read_csv("${betas}", sep="\t", header=None)
+
+if str(dataframe.iloc[0, 0]).strip().lower() == "probe_id":
+    dataframe = dataframe.iloc[1:, :]
+
+dataframe.columns = ["probe_id"] + [f"value_{i}" for i in range(1, dataframe.shape[1])]
+dataframe = dataframe.set_index("probe_id")
 
 dataframe = dataframe.apply(pd.to_numeric, errors="coerce").round(4).astype("float32")
-dataframe.to_csv("compressed_betas.tsv", sep="\t", index_label="probe_id")
+dataframe.index.name = None
+dataframe.to_csv("compressed_betas.tsv", sep="\t", header=False)
 
 with open("versions.yml", "w") as f:
     f.write('"${task.process}":\\n')
