@@ -227,7 +227,21 @@ cat("Saved detection p-values to", basename(detp_out), "\n")
 rm(detP)
 invisible(gc())
 
-m_set <- preprocessFunnorm(rg_set)
+if (ncol(rg_set) < 2) {
+    cat("Single-sample input detected. Using preprocessNoob fallback instead of preprocessFunnorm.\n")
+    m_set <- preprocessNoob(rg_set)
+} else {
+    m_set <- tryCatch({
+        preprocessFunnorm(rg_set)
+    }, error = function(e) {
+        err_msg <- conditionMessage(e)
+        if (grepl("initial centers are not distinct", err_msg, ignore.case = TRUE)) {
+            cat("preprocessFunnorm sex-clustering failed; retrying with preprocessNoob fallback.\n")
+            return(preprocessNoob(rg_set))
+        }
+        stop(e)
+    })
+}
 beta <- getBeta(m_set)
 colnames(beta) <- pData(m_set)$sample
 beta_out <- file.path(opt$outdir, paste0(opt$out_prefix, ".normalized_betas.tsv"))

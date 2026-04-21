@@ -31,11 +31,11 @@ EOF
         --out-prefix ${dataset_name}__${sample_name} \
         ${args}
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        r-base: \$(R --version | head -1 | sed 's/R version //; s/ .*//')
-        bioconductor-minfi: \$(Rscript -e "cat(as.character(packageVersion('minfi')))")
-    END_VERSIONS
+    printf '"%s":\n    r-base: %s\n    bioconductor-minfi: %s\n' \
+        "${task.process}" \
+        "\$(R --version | head -1 | sed 's/R version //; s/ .*//')" \
+        "\$(Rscript -e \"cat(as.character(packageVersion('minfi')))\")" \
+        > versions.yml
     """
 
     stub:
@@ -43,10 +43,10 @@ EOF
     touch ${dataset_name}__${sample_name}.normalized_betas.tsv
     touch ${dataset_name}__${sample_name}.detection_pvalues.tsv
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        r-base: \$(R --version | head -1 | sed 's/R version //; s/ .*//')
-        bioconductor-minfi: \$(Rscript -e "cat(as.character(packageVersion('minfi')))")
-    END_VERSIONS
+    printf '"%s":\n    r-base: %s\n    bioconductor-minfi: %s\n' \
+        "${task.process}" \
+        "\$(R --version | head -1 | sed 's/R version //; s/ .*//')" \
+        "\$(Rscript -e \"cat(as.character(packageVersion('minfi')))\")" \
+        > versions.yml
     """
 }
