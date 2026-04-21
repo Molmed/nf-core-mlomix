@@ -177,17 +177,13 @@ if (length(bad_files) > 0) {
 }
 cat("All IDAT files are parseable.\n\n")
 
-# Use SerialParam for sequential reading to avoid BiocParallel race conditions
-# This is slower but more robust for large datasets with potential file read issues
-library(BiocParallel)
-
 result <- tryCatch({
     # Attempt parallel read first (faster for small-to-medium datasets)
     cat("Attempting parallel read...\n")
     read.metharray.exp(targets = targets, verbose = TRUE)
 }, error = function(e) {
-    # Fall back to serial reading on error
-    cat("Parallel read failed, switching to serial mode...\n")
+    # Handle known import errors with targeted retries.
+    cat("Initial read failed, evaluating retry strategy...\n")
     err_msg <- conditionMessage(e)
     cat("Error message:", err_msg, "\n")
 
@@ -205,18 +201,18 @@ result <- tryCatch({
         }
     }
 
-    tryCatch({
-        read.metharray.exp(targets = targets, verbose = TRUE,
-                           BPPARAM = BiocParallel::SerialParam())
-    }, error = function(e2) {
-        stop(
-            paste0(
-                "Serial read also failed after parallel fallback. ",
-                "This usually indicates one or more malformed IDAT files.\n",
-                "Serial error: ", conditionMessage(e2)
-            )
+    if (grepl("different array size", err_msg, ignore.case = TRUE)) {
+        cat("Detected mixed array size input. Retrying with force=TRUE...\n")
+        return(read.metharray.exp(targets = targets, verbose = TRUE, force = TRUE))
+    }
+
+    stop(
+        paste0(
+            "Failed to read IDAT files with minfi. ",
+            "If this is a mixed-array dataset, enable force import.\n",
+            "Original error: ", err_msg
         )
-    })
+    )
 })
 
 rg_set <- result
