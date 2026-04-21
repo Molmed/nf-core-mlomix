@@ -10,7 +10,7 @@ process FILTER_GENES {
     input:
     val dataset_name
     path data_path
-    path ref_path
+    each path(ref_path)
 
     output:
     path "${dataset_name}.filtered_genes.csv", emit: filtered_genes_csv
