@@ -5,6 +5,7 @@
 */
 include { PREPROCESS_MINFI       } from '../modules/local/dnam/preprocess_minfi/main'
 include { CONCATENATE_DNAM       } from '../modules/local/dnam/concatenate_dnam'
+include { COMPRESS_DNAM          } from '../modules/local/dnam/compress_dnam/main'
 include { P_VAL_CORRECTION       } from '../modules/local/dnam/p_val_correction/main'
 include { FILTER_COMMON_PROBES   } from '../modules/local/dnam/filter_common_probes/main'
 include { FILTER_BY_MISSING      } from '../modules/local/dnam/filter_by_missing/main'
@@ -98,7 +99,37 @@ workflow DNAM {
 
     ch_minfi_pairs = PREPROCESS_MINFI.out.corrected_inputs
 
-    ch_pairs_for_correction = ch_minfi_pairs.mix(ch_precomputed_pairs)
+    ch_pairs_with_pvals = ch_minfi_pairs.mix(ch_precomputed_pairs)
+
+    ch_betas_for_compression = ch_pairs_with_pvals
+        .map { dataset_name, sample_name, betas, _detection_pvals -> [dataset_name, sample_name, betas] }
+        .mix(ch_precomputed_beta_only)
+
+    COMPRESS_DNAM (
+        ch_betas_for_compression
+    )
+    ch_versions = ch_versions.mix(COMPRESS_DNAM.out.versions)
+
+    ch_compressed_by_key = COMPRESS_DNAM.out.compressed_betas
+        .map { dataset_name, sample_name, compressed_betas ->
+            ["${dataset_name}__${sample_name}", dataset_name, sample_name, compressed_betas]
+        }
+
+    ch_pvals_by_key = ch_pairs_with_pvals
+        .map { dataset_name, sample_name, _betas, detection_pvals ->
+            ["${dataset_name}__${sample_name}", detection_pvals]
+        }
+
+    ch_compressed_with_optional_pvals = ch_compressed_by_key
+        .join(ch_pvals_by_key, remainder: true)
+
+    ch_pairs_for_correction = ch_compressed_with_optional_pvals
+        .filter { tuple_item -> tuple_item[4] != null }
+        .map { tuple_item -> [tuple_item[1], tuple_item[2], tuple_item[3], tuple_item[4]] }
+
+    ch_compressed_beta_only = ch_compressed_with_optional_pvals
+        .filter { tuple_item -> tuple_item[4] == null }
+        .map { tuple_item -> [tuple_item[1], tuple_item[2], tuple_item[3]] }
 
     //
     // MODULE: Replace beta values with NaN where detection p-value >= threshold
@@ -110,7 +141,7 @@ workflow DNAM {
     ch_versions = ch_versions.mix(P_VAL_CORRECTION.out.versions)
 
     ch_corrected_or_passthrough_betas = P_VAL_CORRECTION.out.corrected_betas
-        .mix(ch_precomputed_beta_only)
+        .mix(ch_compressed_beta_only)
 
     //
     // MODULE: Filter DNAm betas per sample (common probes -> missingness -> variance)
