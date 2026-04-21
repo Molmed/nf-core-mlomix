@@ -68,6 +68,9 @@ process CONCATENATE_GEX {
         # Concatenate all dataframes, using key as column name
         data = pd.concat(dfs, axis=1)
 
+        # Ensure a strict numeric matrix and replace missing genes-per-sample with 0 counts.
+        data = data.apply(pd.to_numeric, errors='coerce').fillna(0)
+
         # Sort columns by name
         data = data.sort_index(axis=1)
 
