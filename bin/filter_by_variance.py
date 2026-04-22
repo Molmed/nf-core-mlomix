@@ -52,9 +52,9 @@ def plot_variance_distribution(
 def remove_low_variance_features(
     beta_df: pd.DataFrame, variance_threshold: float
 ) -> pd.DataFrame:
-    """Keep features (columns) with variance > variance_threshold."""
+    """Keep features (rows/probes) with variance > variance_threshold."""
     print(f"Dataframe shape before filtering: {beta_df.shape}")
-    variances = beta_df.var(axis=0)
+    variances = beta_df.var(axis=1)
 
     print("Variance statistics before filtering:")
     print(variances.describe())
@@ -77,10 +77,10 @@ def remove_low_variance_features(
         output_prefix="variance_distribution_before_filtering",
     )
 
-    filtered_df = beta_df.loc[:, variances > variance_threshold]
+    filtered_df = beta_df.loc[variances > variance_threshold, :]
     print(f"Dataframe shape after filtering: {filtered_df.shape}")
 
-    variances_after = filtered_df.var(axis=0)
+    variances_after = filtered_df.var(axis=1)
     print("Variance statistics after filtering:")
     print(variances_after.describe())
 
