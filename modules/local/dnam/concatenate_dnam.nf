@@ -88,3 +88,73 @@ with open("versions.yml", "w") as f:
     END_VERSIONS
     """
 }
+
+process MERGE_DATASETS {
+    label 'process_high'
+
+    conda "conda-forge::pandas=1.5.2"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/pandas:1.5.2' :
+        'biocontainers/pandas:1.5.2' }"
+
+    input:
+    path beta_matrices
+
+    output:
+    path "merged.beta_matrix.tsv", emit: beta_matrix
+    path "versions.yml", emit: versions
+
+    when:
+    task.ext.when == null || task.ext.when
+
+    script:
+    """
+    #!/usr/bin/env python3
+
+import pandas as pd
+import sys
+
+inputs = [
+    path for path in [${beta_matrices.collect { matrix_path -> "\"${matrix_path.toString()}\"" }.join(', ')}]
+    if path
+]
+
+if not inputs:
+    raise ValueError("No dataset beta matrices were provided to MERGE_DATASETS")
+
+frames = []
+for input_path in inputs:
+    frame = pd.read_csv(input_path, sep="\t", header=None)
+    if frame.shape[1] < 2:
+        raise ValueError(
+            f"Expected at least 2 columns in {input_path}, got {frame.shape[1]}"
+        )
+
+    frame.columns = ["probe_id"] + [f"value_{i}" for i in range(1, frame.shape[1])]
+    frame = frame.set_index("probe_id")
+    frames.append(frame)
+
+merged = pd.concat(frames, axis=1)
+merged = merged.loc[:, ~merged.columns.duplicated(keep='first')]
+merged = merged.sort_index(axis=1)
+merged.index.name = None
+merged.to_csv("merged.beta_matrix.tsv", sep="\t", header=False)
+
+import pandas
+with open("versions.yml", "w") as f:
+    f.write('"${task.process}":\\n')
+    f.write(f'    python: "{sys.version.split()[0]}"\\n')
+    f.write(f'    pandas: "{pandas.__version__}"\\n')
+    """
+
+    stub:
+    """
+    touch merged.beta_matrix.tsv
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        python: "stub"
+        pandas: "stub"
+    END_VERSIONS
+    """
+}

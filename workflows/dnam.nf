@@ -4,7 +4,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 include { PREPROCESS_MINFI       } from '../modules/local/dnam/preprocess_minfi/main'
-include { CONCATENATE_DNAM       } from '../modules/local/dnam/concatenate_dnam'
+include { CONCATENATE_DNAM; MERGE_DATASETS } from '../modules/local/dnam/concatenate_dnam'
 include { COMPRESS_DNAM          } from '../modules/local/dnam/compress_dnam/main'
 include { P_VAL_CORRECTION       } from '../modules/local/dnam/p_val_correction/main'
 include { FILTER_COMMON_PROBES   } from '../modules/local/dnam/filter_common_probes/main'
@@ -169,10 +169,14 @@ workflow DNAM {
     )
     ch_versions = ch_versions.mix(CONCATENATE_DNAM.out.versions)
 
-    ch_dataset_betas_for_missing = CONCATENATE_DNAM.out.beta_matrix
+    MERGE_DATASETS (
+        CONCATENATE_DNAM.out.beta_matrix.collect()
+    )
+    ch_versions = ch_versions.mix(MERGE_DATASETS.out.versions)
+
+    ch_dataset_betas_for_missing = MERGE_DATASETS.out.beta_matrix
         .map { beta_matrix ->
-            def dataset_name = beta_matrix.baseName.replaceFirst(/\.beta_matrix$/, '')
-            [dataset_name, dataset_name, beta_matrix]
+            ["merged_datasets", "merged_datasets", beta_matrix]
         }
 
     FILTER_BY_MISSING (
