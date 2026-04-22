@@ -9,19 +9,16 @@ import pandas as pd
 
 
 def read_beta_matrix(file_path: str) -> pd.DataFrame:
-    """Read headerless beta matrix (probe_id + beta columns)."""
-    beta_df = pd.read_csv(file_path, sep="\t", header=None)
+    """Read beta matrix with header row (probe_id + sample columns)."""
+    beta_df = pd.read_csv(file_path, sep="\t", header=0, index_col=0)
 
-    if beta_df.shape[1] < 2:
+    if beta_df.shape[1] < 1:
         raise ValueError(
             "Expected at least 2 columns in beta file, got "
-            f"{beta_df.shape[1]}"
+            f"{beta_df.shape[1] + 1}"
         )
 
-    beta_df.columns = ["probe_id"] + [
-        f"value_{i}" for i in range(1, beta_df.shape[1])
-    ]
-    return beta_df.set_index("probe_id")
+    return beta_df
 
 
 def remove_high_missing_features(
@@ -71,7 +68,7 @@ def main() -> None:
 
     output_file = os.path.join(args.outdir, "missing_filtered_betas.tsv")
     filtered_df.index.name = None
-    filtered_df.to_csv(output_file, sep="\t", header=False)
+    filtered_df.to_csv(output_file, sep="\t", header=True)
     print(f"Saved missingness-filtered beta values to {output_file}")
 
     print("\n=== Filtering complete ===")
