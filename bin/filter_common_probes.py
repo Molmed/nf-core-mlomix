@@ -26,12 +26,6 @@ def read_beta_matrix(
             f"{beta_df.shape[1]}"
         )
 
-    if str(beta_df.iloc[0, 0]).strip().lower() == "probe_id":
-        raise ValueError(
-            "Header detected in beta file. This script supports "
-            "headerless beta matrices only."
-        )
-
     beta_df.columns = ["probe_id"] + [
         f"value_{i}" for i in range(1, beta_df.shape[1])
     ]
