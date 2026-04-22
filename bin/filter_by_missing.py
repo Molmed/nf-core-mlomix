@@ -24,13 +24,13 @@ def read_beta_matrix(file_path: str) -> pd.DataFrame:
 def remove_high_missing_features(
     beta_df: pd.DataFrame, missing_threshold: float
 ) -> pd.DataFrame:
-    """Keep features (columns) with missing fraction <= missing_threshold."""
+    """Keep features (rows/probes) with missing fraction <= missing_threshold."""
     print(f"Dataframe shape before filtering: {beta_df.shape}")
-    percentage_missing_vals = beta_df.isnull().mean()
+    percentage_missing_vals = beta_df.isnull().mean(axis=1)
     # Log percentage_missing_vals.describe() for debugging
     print("Missingness statistics (percentage of missing values per feature):")
     print(percentage_missing_vals.describe())
-    filtered_df = beta_df.loc[:, percentage_missing_vals <= missing_threshold]
+    filtered_df = beta_df.loc[percentage_missing_vals <= missing_threshold, :]
     print(f"Dataframe shape after filtering: {filtered_df.shape}")
     return filtered_df
 
