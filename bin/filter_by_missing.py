@@ -40,7 +40,7 @@ def main() -> None:
         description="Remove features with too many missing values"
     )
     parser.add_argument(
-        "--betas", required=True, help="TSV file of beta values"
+        "--betas", required=True, help="CSV file of beta values"
     )
     parser.add_argument(
         "--missing_threshold",
@@ -66,9 +66,9 @@ def main() -> None:
 
     filtered_df = remove_high_missing_features(beta_df, args.missing_threshold)
 
-    output_file = os.path.join(args.outdir, "missing_filtered_betas.tsv")
+    output_file = os.path.join(args.outdir, "missing_filtered_betas.csv")
     filtered_df.index.name = None
-    filtered_df.to_csv(output_file, sep="\t", header=True)
+    filtered_df.to_csv(output_file, header=True)
     print(f"Saved missingness-filtered beta values to {output_file}")
 
     print("\n=== Filtering complete ===")

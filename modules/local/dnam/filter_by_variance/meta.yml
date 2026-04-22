@@ -19,18 +19,18 @@ input:
   - - betas:
         type: file
         description: |
-          Tab-separated beta matrix where columns are features to be
+          Comma-separated beta matrix where columns are features to be
           filtered by variance.
-        pattern: "*.tsv"
+        pattern: "*.csv"
 
 output:
   - variance_filtered_betas:
-      - "variance_filtered_betas.tsv":
+      - "variance_filtered_betas.csv":
           type: file
           description: |
-            Tab-separated beta matrix after removing features with variance
+            Comma-separated beta matrix after removing features with variance
             less than or equal to the threshold.
-          pattern: "variance_filtered_betas.tsv"
+          pattern: "variance_filtered_betas.csv"
   - variance_plot_before_png:
       - "variance_distribution_before_filtering.png":
           type: file

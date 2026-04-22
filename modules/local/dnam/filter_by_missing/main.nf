@@ -9,7 +9,7 @@ process FILTER_BY_MISSING {
     tuple val(dataset_name), val(sample_name), path(betas)
 
     output:
-    tuple val(dataset_name), val(sample_name), path("${dataset_name}__${sample_name}.missing_filtered_betas.tsv"), emit: missing_filtered_betas
+    tuple val(dataset_name), val(sample_name), path("${dataset_name}__${sample_name}.missing_filtered_betas.csv"), emit: missing_filtered_betas
     path "versions.yml"             , emit: versions
 
     when:
@@ -17,14 +17,14 @@ process FILTER_BY_MISSING {
 
     script:
     def args = task.ext.args ?: ''
-    def output_name = "${dataset_name}__${sample_name}.missing_filtered_betas.tsv"
+    def output_name = "${dataset_name}__${sample_name}.missing_filtered_betas.csv"
     """
     filter_by_missing.py \
         --betas ${betas} \
         --missing_threshold ${params.missing_threshold} \
         ${args}
 
-    mv missing_filtered_betas.tsv ${output_name}
+    mv missing_filtered_betas.csv ${output_name}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -35,7 +35,7 @@ process FILTER_BY_MISSING {
 
     stub:
     """
-    touch ${dataset_name}__${sample_name}.missing_filtered_betas.tsv
+    touch ${dataset_name}__${sample_name}.missing_filtered_betas.csv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

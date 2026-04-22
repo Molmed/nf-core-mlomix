@@ -9,7 +9,7 @@ process FILTER_BY_VARIANCE {
     tuple val(dataset_name), val(sample_name), path(betas)
 
     output:
-    tuple val(dataset_name), val(sample_name), path("${dataset_name}__${sample_name}.variance_filtered_betas.tsv"), emit: variance_filtered_betas
+    tuple val(dataset_name), val(sample_name), path("${dataset_name}__${sample_name}.variance_filtered_betas.csv"), emit: variance_filtered_betas
     path "${dataset_name}__${sample_name}.variance_distribution_before_filtering.png"  , emit: variance_plot_before_png
     path "${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg"  , emit: variance_plot_before_svg
     path "${dataset_name}__${sample_name}.variance_distribution_after_filtering.png"   , emit: variance_plot_after_png
@@ -21,7 +21,7 @@ process FILTER_BY_VARIANCE {
 
     script:
     def args = task.ext.args ?: ''
-    def beta_output_name = "${dataset_name}__${sample_name}.variance_filtered_betas.tsv"
+    def beta_output_name = "${dataset_name}__${sample_name}.variance_filtered_betas.csv"
     def before_png_name = "${dataset_name}__${sample_name}.variance_distribution_before_filtering.png"
     def before_svg_name = "${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg"
     def after_png_name = "${dataset_name}__${sample_name}.variance_distribution_after_filtering.png"
@@ -32,7 +32,7 @@ process FILTER_BY_VARIANCE {
         --variance_threshold ${params.variance_threshold} \
         ${args}
 
-    mv variance_filtered_betas.tsv ${beta_output_name}
+    mv variance_filtered_betas.csv ${beta_output_name}
     mv variance_distribution_before_filtering.png ${before_png_name}
     mv variance_distribution_before_filtering.svg ${before_svg_name}
     mv variance_distribution_after_filtering.png ${after_png_name}
@@ -48,7 +48,7 @@ process FILTER_BY_VARIANCE {
 
     stub:
     """
-    touch ${dataset_name}__${sample_name}.variance_filtered_betas.tsv
+    touch ${dataset_name}__${sample_name}.variance_filtered_betas.csv
     touch ${dataset_name}__${sample_name}.variance_distribution_before_filtering.png
     touch ${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg
     touch ${dataset_name}__${sample_name}.variance_distribution_after_filtering.png

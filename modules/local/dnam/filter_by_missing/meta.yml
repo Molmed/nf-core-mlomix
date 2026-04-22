@@ -15,18 +15,18 @@ input:
   - - betas:
         type: file
         description: |
-          Tab-separated file of beta values where columns are features
+          Comma-separated file of beta values where columns are features
           to be filtered by missingness.
-        pattern: "*.tsv"
+        pattern: "*.csv"
 
 output:
   - missing_filtered_betas:
-      - "missing_filtered_betas.tsv":
+      - "missing_filtered_betas.csv":
           type: file
           description: |
-            Tab-separated beta matrix after removing features with missing
+            Comma-separated beta matrix after removing features with missing
             fraction greater than the threshold.
-          pattern: "missing_filtered_betas.tsv"
+          pattern: "missing_filtered_betas.csv"
   - versions:
       - "versions.yml":
           type: file
