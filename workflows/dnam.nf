@@ -4,7 +4,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 include { PREPROCESS_MINFI       } from '../modules/local/dnam/preprocess_minfi/main'
-include { CONCATENATE_DNAM; MERGE_DATASETS } from '../modules/local/dnam/concatenate_dnam'
+include { CONCATENATE_DNAM       } from '../modules/local/dnam/concatenate_dnam'
+include { MERGE_DATASETS         } from '../modules/local/dnam/merge_datasets'
 include { COMPRESS_DNAM          } from '../modules/local/dnam/compress_dnam/main'
 include { P_VAL_CORRECTION       } from '../modules/local/dnam/p_val_correction/main'
 include { FILTER_COMMON_PROBES   } from '../modules/local/dnam/filter_common_probes/main'
