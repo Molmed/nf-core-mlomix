@@ -66,7 +66,7 @@ def concatenate(inputs, output_file):
     data = pd.concat(sample_frames, axis=1)
     data.index.name = None
     data = data.sort_index(axis=1)
-    data.to_csv(output_file, sep="\t", header=False)
+    data.to_csv(output_file, sep="\t", header=True)
     return True
 
 concatenate(beta_inputs, "${dataset_name}.beta_matrix.tsv")

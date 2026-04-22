@@ -35,16 +35,12 @@ merged = None
 value_col_counter = 0
 
 for input_path in inputs:
-    frame = pd.read_csv(input_path, sep="\t", header=None, index_col=0)
+    frame = pd.read_csv(input_path, sep="\t", header=0, index_col=0)
     if frame.shape[1] < 1:
         raise ValueError(
             f"Expected at least 2 columns in {input_path}, got {frame.shape[1] + 1}"
         )
 
-    frame.columns = [
-        f"value_{i}"
-        for i in range(value_col_counter + 1, value_col_counter + frame.shape[1] + 1)
-    ]
     value_col_counter += frame.shape[1]
 
     if merged is None:
@@ -59,7 +55,7 @@ if merged is None:
     raise ValueError("No data available after reading dataset beta matrices")
 
 merged.index.name = None
-merged.to_csv("merged.beta_matrix.tsv", sep="\t", header=False)
+merged.to_csv("merged.beta_matrix.tsv", sep="\t", header=True)
 
 import pandas
 with open("versions.yml", "w") as f:
