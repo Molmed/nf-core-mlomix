@@ -1,6 +1,6 @@
 process FILTER_BY_MISSING {
     tag "filter_by_missing"
-    label 'process_medium'
+    label 'process_high'
 
     conda "${moduleDir}/environment.yml"
     container "biocontainers/pandas:1.5.3_cv1"

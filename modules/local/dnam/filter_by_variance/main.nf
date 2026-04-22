@@ -1,6 +1,6 @@
 process FILTER_BY_VARIANCE {
     tag "filter_by_variance"
-    label 'process_medium'
+    label 'process_high'
 
     conda "${moduleDir}/environment.yml"
     container "biocontainers/matplotlib:3.7.1"
