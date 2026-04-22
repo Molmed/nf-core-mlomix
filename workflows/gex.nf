@@ -16,7 +16,7 @@ include { BATCH_CORRECT          } from '../modules/local/gex/batch_correct'
 include { FILTER_GENES           } from '../modules/local/gex/filter_genes/filter_genes'
 include { MERGE_DATASETS         } from '../modules/local/gex/merge_datasets'
 include { NORMALIZE              } from '../modules/local/gex/normalize'
-include { TRANSPOSE              } from '../modules/local/gex/transpose'
+include { TRANSPOSE              } from '../modules/local/transpose'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -123,7 +123,8 @@ workflow GEX {
     ch_versions = ch_versions.mix(UMAP_NORM_BY_CLASS.out.versions)
 
     TRANSPOSE (
-        NORMALIZE.out.normalized_csv
+        NORMALIZE.out.normalized_csv,
+        "gex"
     )
     ch_versions = ch_versions.mix(TRANSPOSE.out.versions)
 

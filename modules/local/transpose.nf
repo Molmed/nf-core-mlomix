@@ -7,10 +7,11 @@ process TRANSPOSE {
         'biocontainers/pandas:1.5.2' }"
 
     input:
-    path normalized_csv
+    path matrix_csv
+    val suffix
 
     output:
-    path "transposed.csv", emit: transposed_csv
+    path "transposed_${suffix}.csv", emit: transposed_csv
     path "versions.yml", emit: versions
 
     when:
@@ -23,7 +24,7 @@ process TRANSPOSE {
     import pandas as pd
     import sys
 
-    def transpose(file_path):
+    def transpose(file_path, output_suffix):
         # Load the data
         data = pd.read_csv(file_path, index_col=0)
 
@@ -33,10 +34,10 @@ process TRANSPOSE {
         data.columns.name = None
 
         # Dump to file
-        data.to_csv("transposed.csv")
+        data.to_csv(f"transposed_{output_suffix}.csv")
 
-    # Filter the annotations
-    transpose("${normalized_csv}")
+    # Transpose the matrix
+    transpose("${matrix_csv}", "${suffix}")
 
     # Create versions file
     import pandas

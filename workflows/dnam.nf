@@ -11,6 +11,7 @@ include { P_VAL_CORRECTION       } from '../modules/local/dnam/p_val_correction/
 include { FILTER_COMMON_PROBES   } from '../modules/local/dnam/filter_common_probes/main'
 include { FILTER_BY_MISSING      } from '../modules/local/dnam/filter_by_missing/main'
 include { FILTER_BY_VARIANCE     } from '../modules/local/dnam/filter_by_variance/main'
+include { TRANSPOSE              } from '../modules/local/transpose'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 
 /*
@@ -189,6 +190,12 @@ workflow DNAM {
         FILTER_BY_MISSING.out.missing_filtered_betas
     )
     ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
+
+    TRANSPOSE (
+        FILTER_BY_VARIANCE.out.variance_filtered_betas.map { dataset_name, sample_name, betas -> betas },
+        "dnam"
+    )
+    ch_versions = ch_versions.mix(TRANSPOSE.out.versions)
 
     //
     // Collate and save software versions
