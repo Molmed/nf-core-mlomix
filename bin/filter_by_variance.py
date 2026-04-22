@@ -19,9 +19,6 @@ def read_beta_matrix(file_path: str) -> pd.DataFrame:
             f"{beta_df.shape[1]}"
         )
 
-    if str(beta_df.iloc[0, 0]).strip().lower() == "probe_id":
-        beta_df = beta_df.iloc[1:, :]
-
     beta_df.columns = ["probe_id"] + [
         f"value_{i}" for i in range(1, beta_df.shape[1])
     ]
