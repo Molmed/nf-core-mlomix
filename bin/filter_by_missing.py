@@ -10,7 +10,7 @@ import pandas as pd
 
 def read_beta_matrix(file_path: str) -> pd.DataFrame:
     """Read beta matrix with header row (probe_id + sample columns)."""
-    beta_df = pd.read_csv(file_path, sep="\t", header=0, index_col=0)
+    beta_df = pd.read_csv(file_path, sep=",", header=0, index_col=0)
 
     if beta_df.shape[1] < 1:
         raise ValueError(

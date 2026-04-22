@@ -10,7 +10,7 @@ process MERGE_DATASETS {
     path beta_matrices
 
     output:
-    path "merged.beta_matrix.tsv", emit: beta_matrix
+    path "merged.beta_matrix.csv", emit: beta_matrix
     path "versions.yml", emit: versions
 
     when:
@@ -55,7 +55,7 @@ if merged is None:
     raise ValueError("No data available after reading dataset beta matrices")
 
 merged.index.name = None
-merged.to_csv("merged.beta_matrix.tsv", sep="\t", header=True)
+merged.to_csv("merged.beta_matrix.csv", header=True)
 
 import pandas
 with open("versions.yml", "w") as f:
@@ -66,7 +66,7 @@ with open("versions.yml", "w") as f:
 
     stub:
     """
-    touch merged.beta_matrix.tsv
+    touch merged.beta_matrix.csv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

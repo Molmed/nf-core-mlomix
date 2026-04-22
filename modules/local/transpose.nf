@@ -26,7 +26,7 @@ process TRANSPOSE {
 
     def transpose(file_path, output_suffix):
         # Load the data
-        data = pd.read_csv(file_path, index_col=0)
+        data = pd.read_csv(file_path, sep=",", index_col=0)
 
         # Format
         data = data.T
