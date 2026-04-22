@@ -26,6 +26,7 @@ process CONCATENATE_DNAM {
 
 import pandas as pd
 import sys
+import gc
 
 beta_inputs = [${beta_mapping_entries}]
 
@@ -122,21 +123,33 @@ inputs = [
 if not inputs:
     raise ValueError("No dataset beta matrices were provided to MERGE_DATASETS")
 
-frames = []
+merged = None
+value_col_counter = 0
+
 for input_path in inputs:
-    frame = pd.read_csv(input_path, sep="\t", header=None)
-    if frame.shape[1] < 2:
+    frame = pd.read_csv(input_path, sep="\t", header=None, index_col=0)
+    if frame.shape[1] < 1:
         raise ValueError(
-            f"Expected at least 2 columns in {input_path}, got {frame.shape[1]}"
+            f"Expected at least 2 columns in {input_path}, got {frame.shape[1] + 1}"
         )
 
-    frame.columns = ["probe_id"] + [f"value_{i}" for i in range(1, frame.shape[1])]
-    frame = frame.set_index("probe_id")
-    frames.append(frame)
+    frame.columns = [
+        f"value_{i}"
+        for i in range(value_col_counter + 1, value_col_counter + frame.shape[1] + 1)
+    ]
+    value_col_counter += frame.shape[1]
 
-merged = pd.concat(frames, axis=1)
-merged = merged.loc[:, ~merged.columns.duplicated(keep='first')]
-merged = merged.sort_index(axis=1)
+    if merged is None:
+        merged = frame
+    else:
+        merged = merged.join(frame, how="outer")
+
+    del frame
+    gc.collect()
+
+if merged is None:
+    raise ValueError("No data available after reading dataset beta matrices")
+
 merged.index.name = None
 merged.to_csv("merged.beta_matrix.tsv", sep="\t", header=False)
 
