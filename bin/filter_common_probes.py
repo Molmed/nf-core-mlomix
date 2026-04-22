@@ -3,9 +3,7 @@
 """
 Filter common probes across methylation array platforms.
 
-1. Deduplicates probes by averaging duplicate columns
-   (e.g. EPIC v2 replicate probes).
-2. Filters to probes present in a reference probe list
+1. Filters to probes present in a reference probe list
    (e.g. probes common to 450K, EPIC v1, EPIC v2).
 """
 
@@ -29,7 +27,10 @@ def read_beta_matrix(
         )
 
     if str(beta_df.iloc[0, 0]).strip().lower() == "probe_id":
-        beta_df = beta_df.iloc[1:, :]
+        raise ValueError(
+            "Header detected in beta file. This script supports "
+            "headerless beta matrices only."
+        )
 
     beta_df.columns = ["probe_id"] + [
         f"value_{i}" for i in range(1, beta_df.shape[1])
@@ -37,24 +38,7 @@ def read_beta_matrix(
     if sample_name and beta_df.shape[1] == 2:
         beta_df = beta_df.rename(columns={"value_1": sample_name})
 
-    beta_df = beta_df.set_index("probe_id")
-    return beta_df
-
-
-def deduplicate_probes(beta_df: pd.DataFrame) -> pd.DataFrame:
-    """Average duplicate probe columns (e.g. EPIC v2 replicate probes)."""
-    n_before = beta_df.shape[1]
-    beta_df = beta_df.groupby(beta_df.columns, axis=1).mean()
-    n_after = beta_df.shape[1]
-    n_dupes = n_before - n_after
-    if n_dupes > 0:
-        print(
-            "Deduplicated "
-            f"{n_dupes} duplicate probe columns ({n_before} -> {n_after})"
-        )
-    else:
-        print("No duplicate probe columns found")
-    return beta_df
+    return beta_df.set_index("probe_id")
 
 
 def filter_probes(beta_df: pd.DataFrame, probe_list: list) -> pd.DataFrame:
@@ -103,16 +87,8 @@ def main():
         f"{beta_df.shape[1]} samples\n"
     )
 
-    # Step 1: Deduplicate probes
-    print("Step 1: Deduplicating probes...")
-    beta_df = deduplicate_probes(beta_df)
-    print(
-        f"Matrix after dedup: {beta_df.shape[0]} probes x "
-        f"{beta_df.shape[1]} samples\n"
-    )
-
-    # Step 2: Filter to common probes
-    print("Step 2: Filtering to common probes...")
+    # Filter to common probes
+    print("Filtering to common probes...")
     probes_to_keep = pd.read_csv(
         args.probes,
         sep="\t",

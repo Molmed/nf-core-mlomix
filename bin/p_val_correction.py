@@ -109,7 +109,8 @@ def main():
 
     # Save corrected beta values
     output_file = f"{args.outdir}/corrected_betas.tsv"
-    beta_df.to_csv(output_file, sep="\t", index_label="probe_id")
+    beta_df.index.name = None
+    beta_df.to_csv(output_file, sep="\t", header=False)
     print(f"Saved corrected beta values to {output_file}")
 
     print("\n=== P-value correction complete ===")
