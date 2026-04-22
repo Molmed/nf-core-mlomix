@@ -1,5 +1,5 @@
 process CONCATENATE_DNAM {
-    label 'process_medium'
+    label 'process_high'
 
     conda "conda-forge::pandas=1.5.2"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
