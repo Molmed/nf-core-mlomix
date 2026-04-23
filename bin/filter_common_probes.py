@@ -13,6 +13,13 @@ import os
 import pandas as pd
 
 
+def normalize_probe_id(probe_id: str) -> str:
+    """Strip any suffix appended after the first underscore."""
+    if isinstance(probe_id, str):
+        return probe_id.split("_", 1)[0]
+    return probe_id
+
+
 def read_beta_matrix(
     file_path: str,
     sample_name: str | None = None,
@@ -32,7 +39,9 @@ def read_beta_matrix(
     if sample_name and beta_df.shape[1] == 2:
         beta_df = beta_df.rename(columns={"value_1": sample_name})
 
-    return beta_df.set_index("probe_id")
+    beta_df = beta_df.set_index("probe_id")
+    beta_df.index = beta_df.index.map(normalize_probe_id)
+    return beta_df
 
 
 def filter_probes(beta_df: pd.DataFrame, probe_list: list) -> pd.DataFrame:
@@ -89,7 +98,7 @@ def main():
         header=None,
         names=["probe_id"],
     )
-    probe_list = probes_to_keep["probe_id"].tolist()
+    probe_list = probes_to_keep["probe_id"].map(normalize_probe_id).tolist()
     print(f"Reference probe list: {len(probe_list)} probes")
     beta_df = filter_probes(beta_df, probe_list)
     print(
