@@ -97,6 +97,8 @@ workflow MLOMIX {
 
     DNAM (
         ch_dnam_samplesheet_gated,
+        ch_classes,
+        random_seed,
         ch_dnam_beta_matrix,
         ch_dnam_pvals,
         ch_use_precomputed_dnam_gated

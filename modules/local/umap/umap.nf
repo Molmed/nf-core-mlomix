@@ -9,7 +9,7 @@ process UMAP {
 
     input:
     val prefix
-    path gex_path
+    path features_path
     path labels_file
     val transformed
     val random_seed
@@ -44,13 +44,13 @@ process UMAP {
     import umap.umap_ as umap
     import glasbey
 
-    class GexUmap():
+    class FeaturesUmap():
         def __init__(self,
                     filename,
-                    counts_file,
+                    features_file,
                     transformed=False):
             self._filename = filename
-            self._counts_file = counts_file
+            self._features_file = features_file
             self._FONT_SIZE = 15
             self._FIG_SIZE = (8, 8)
 
@@ -60,8 +60,8 @@ process UMAP {
             self._transformed = transformed
 
         def run(self):
-            # Load your dataset
-            data = pd.read_csv(self._counts_file, index_col=0)
+            # Load feature matrix
+            data = pd.read_csv(self._features_file, index_col=0)
 
             if not self._transformed:
                 data = data.T
@@ -75,6 +75,23 @@ process UMAP {
 
             data = data.loc[common_samples].sort_index()
             labels = labels.loc[common_samples].sort_index()
+
+            # DNAm matrices can contain missing values after filtering; coerce and impute for UMAP.
+            data = data.apply(pd.to_numeric, errors='coerce')
+            data = data.replace([np.inf, -np.inf], np.nan)
+
+            # Drop samples/probes that are completely missing, then impute remaining missing values.
+            data = data.dropna(axis=0, how='all')
+            labels = labels.loc[data.index]
+            data = data.dropna(axis=1, how='all')
+
+            if data.shape[0] < 2:
+                raise ValueError("Need at least 2 samples with non-missing values for UMAP")
+            if data.shape[1] < 1:
+                raise ValueError("No usable features remain after removing all-missing columns")
+
+            data = data.fillna(data.median(axis=0))
+            data = data.fillna(0)
 
             palette = glasbey.create_palette(palette_size=len(labels.unique()))
             colormap = dict(zip(labels.unique(), palette))
@@ -119,9 +136,9 @@ process UMAP {
             plt.savefig(self._filename)
 
     transformed = True if "${transformed}" == "true" else False
-    bu = GexUmap(filename="${prefix}.umap.svg",
-                   counts_file="${gex_path}",
-                   transformed=transformed)
+    bu = FeaturesUmap(filename="${prefix}.umap.svg",
+                      features_file="${features_path}",
+                      transformed=transformed)
     bu.run()
 
     # Create versions file
