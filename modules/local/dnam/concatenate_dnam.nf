@@ -7,10 +7,10 @@ process CONCATENATE_DNAM {
         'biocontainers/pandas:1.5.2' }"
 
     input:
-    tuple val(dataset_name), val(sample_names), val(beta_matrix_paths)
+    tuple val(dataset_name), val(chunk_idx), val(sample_names), val(beta_matrix_paths)
 
     output:
-    path "${dataset_name}.beta_matrix.tsv", emit: beta_matrix
+    path "${dataset_name}.chunk_${chunk_idx}.beta_matrix.tsv", emit: beta_matrix
     val dataset_name, emit: dataset_name
     path "versions.yml", emit: versions
 
@@ -69,7 +69,7 @@ def concatenate(inputs, output_file):
     data.to_csv(output_file, sep="\t", header=True)
     return True
 
-concatenate(beta_inputs, "${dataset_name}.beta_matrix.tsv")
+concatenate(beta_inputs, "${dataset_name}.chunk_${chunk_idx}.beta_matrix.tsv")
 
 import pandas
 with open("versions.yml", "w") as f:
@@ -80,7 +80,7 @@ with open("versions.yml", "w") as f:
 
     stub:
     """
-    touch ${dataset_name}.beta_matrix.tsv
+    touch ${dataset_name}.chunk_${chunk_idx}.beta_matrix.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

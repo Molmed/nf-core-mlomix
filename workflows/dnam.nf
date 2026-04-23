@@ -165,6 +165,15 @@ workflow DNAM {
                 beta_paths.collect { beta_path -> beta_path.toString() }
             ]
         }
+        .flatMap { dataset_name, sample_names, beta_paths ->
+            def chunk_size = Math.max(1, (params.dnam_samples_per_chunk ?: 200) as Integer)
+            def sample_chunks = sample_names.collate(chunk_size)
+            def path_chunks = beta_paths.collate(chunk_size)
+
+            sample_chunks.indices.collect { idx ->
+                [dataset_name, idx, sample_chunks[idx], path_chunks[idx]]
+            }
+        }
 
     CONCATENATE_DNAM (
         ch_common_filtered_by_dataset
