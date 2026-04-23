@@ -6,6 +6,7 @@
 include { GEX_REF_PREPROCESSOR } from './gex_ref_preprocessor'
 include { GEX } from './gex'
 include { DNAM } from './dnam'
+include { FINALIZE } from '../modules/local/finalize/finalize'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,11 +105,20 @@ workflow MLOMIX {
         ch_use_precomputed_dnam_gated
     )
     ch_versions = ch_versions.mix(DNAM.out.versions)
+    ch_dnam_transposed = DNAM.out.transposed_csv
+
+    FINALIZE (
+        ch_classes_tsv,
+        ch_dnam_transposed,
+        ch_gex_transposed
+    )
+    ch_versions = ch_versions.mix(FINALIZE.out.versions)
 
     emit:
     versions = ch_versions
-    gex_transposed_csv = ch_gex_transposed
-    classes_tsv = ch_classes_tsv
+    labels_csv = FINALIZE.out.labels_csv
+    dnam_features_csv = FINALIZE.out.dnam_features_csv
+    gex_features_csv = FINALIZE.out.gex_features_csv
 
 }
 

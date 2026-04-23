@@ -162,10 +162,14 @@ workflow DNAM {
     ch_common_filtered_by_dataset = FILTER_COMMON_PROBES.out.filtered_betas
         .groupTuple()
         .map { dataset_name, sample_names, beta_paths ->
+            // Sort by sample_name to ensure deterministic chunk order for caching
+            def sorted_pairs = [sample_names, beta_paths].transpose().sort { a, b -> a[0] <=> b[0] }
+            def sorted_samples = sorted_pairs.collect { it[0] }
+            def sorted_paths = sorted_pairs.collect { it[1] }
             [
                 dataset_name,
-                sample_names,
-                beta_paths.collect { beta_path -> beta_path.toString() }
+                sorted_samples,
+                sorted_paths
             ]
         }
         .flatMap { dataset_name, sample_names, beta_paths ->
@@ -231,6 +235,7 @@ workflow DNAM {
 
     emit:
     versions = ch_versions // channel: [ path(versions.yml) ]
+    transposed_csv = TRANSPOSE.out.transposed_csv
 
 }
 

@@ -7,7 +7,7 @@ process CONCATENATE_DNAM {
         'biocontainers/pandas:1.5.2' }"
 
     input:
-    tuple val(dataset_name), val(chunk_idx), val(sample_names), val(beta_matrix_paths)
+    tuple val(dataset_name), val(chunk_idx), val(sample_names), path(beta_matrix_paths)
 
     output:
     path "${dataset_name}.chunk_${chunk_idx}.beta_matrix.tsv", emit: beta_matrix
@@ -18,8 +18,12 @@ process CONCATENATE_DNAM {
     task.ext.when == null || task.ext.when
 
     script:
-    def beta_mapping_entries = [sample_names, beta_matrix_paths].transpose().collect { sample_name, file_path ->
-        "[\"${file_path.toString()}\", \"${sample_name.toString()}\"]"
+    // Sort pairs by filename to ensure deterministic order for caching
+    def sorted_pairs = [sample_names, beta_matrix_paths].transpose().sort { a, b ->
+        a[1].name <=> b[1].name
+    }
+    def beta_mapping_entries = sorted_pairs.collect { sample_name, file_path ->
+        "[\"${file_path.name}\", \"${sample_name.toString()}\"]"
     }.join(", ")
     """
     #!/usr/bin/env python3
