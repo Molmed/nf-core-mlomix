@@ -100,6 +100,12 @@
                     "description": "Directory for cached processed annotation assets (GTF/SAF/parsed/filtered) keyed by genome and annotation version.",
                     "fa_icon": "far fa-folder-open"
                 },
+                "use_filtered_annotations": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Use filtered GEX annotations (*.annotations.filtered.csv). If false, use full annotations (*.annotations.full.csv).",
+                    "fa_icon": "fas fa-filter"
+                },
                 "random_seed": {
                     "type": "integer",
                     "default": 42,

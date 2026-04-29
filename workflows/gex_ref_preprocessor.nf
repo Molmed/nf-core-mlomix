@@ -28,14 +28,16 @@ workflow GEX_REF_PREPROCESSOR {
     ch_missing_annotation_version = channel.empty()
     ch_full_genome_name_missing = channel.empty()
 
-    ch_cached_filtered_annotations = genome
+    def annotation_suffix = params.use_filtered_annotations ? 'annotations.filtered.csv' : 'annotations.full.csv'
+
+    ch_cached_annotations = genome
         .combine(annotation_version)
-        .map { g, ann -> file("${params.annotation_cache_dir}/Homo_sapiens.${g}.${ann}.annotations.filtered.csv") }
+        .map { g, ann -> file("${params.annotation_cache_dir}/Homo_sapiens.${g}.${ann}.${annotation_suffix}") }
         .filter { cached -> cached.exists() }
 
     ch_missing_refs = genome
         .combine(annotation_version)
-        .filter { g, ann -> !file("${params.annotation_cache_dir}/Homo_sapiens.${g}.${ann}.annotations.filtered.csv").exists() }
+        .filter { g, ann -> !file("${params.annotation_cache_dir}/Homo_sapiens.${g}.${ann}.${annotation_suffix}").exists() }
 
     ch_missing_genome = ch_missing_refs.map { g, _ann -> g }
     ch_missing_annotation_version = ch_missing_refs.map { _g, ann -> ann }
@@ -91,7 +93,9 @@ workflow GEX_REF_PREPROCESSOR {
         )
 
     emit:
-    filtered_annotations = ch_cached_filtered_annotations.mix(FILTER_ANNOTATIONS.out.filtered_annotations) // channel: [ path(annotations.filtered.csv) ]
+    filtered_annotations = params.use_filtered_annotations
+        ? ch_cached_annotations.mix(FILTER_ANNOTATIONS.out.filtered_annotations)
+        : ch_cached_annotations.mix(PARSE_GTF.out.annotations) // channel: [ path(annotations.filtered.csv|annotations.full.csv) ]
     versions           = ch_versions                          // channel: [ path(versions.yml) ]
 
 }
