@@ -37,6 +37,7 @@ workflow GEX {
     main:
 
     ch_versions = channel.empty()
+    ch_visuals = channel.empty()
 
     CONCATENATE_GEX (
         ch_dataset
@@ -63,6 +64,7 @@ workflow GEX {
         random_seed
     )
     ch_versions = ch_versions.mix(UMAP_RAW_BY_BATCH.out.versions)
+    ch_visuals = ch_visuals.mix(UMAP_RAW_BY_BATCH.out.umap_svg)
 
     UMAP_RAW_BY_CLASS (
         "raw.by_class",
@@ -72,6 +74,7 @@ workflow GEX {
         random_seed
     )
     ch_versions = ch_versions.mix(UMAP_RAW_BY_CLASS.out.versions)
+    ch_visuals = ch_visuals.mix(UMAP_RAW_BY_CLASS.out.umap_svg)
 
     BATCH_CORRECT (
         MERGE_DATASETS.out.merged_csv,
@@ -88,6 +91,7 @@ workflow GEX {
         random_seed
     )
     ch_versions = ch_versions.mix(UMAP_BC_BY_BATCH.out.versions)
+    ch_visuals = ch_visuals.mix(UMAP_BC_BY_BATCH.out.umap_svg)
 
     UMAP_BC_BY_CLASS (
         "batch_corrected.by_class",
@@ -97,6 +101,7 @@ workflow GEX {
         random_seed
     )
     ch_versions = ch_versions.mix(UMAP_BC_BY_CLASS.out.versions)
+    ch_visuals = ch_visuals.mix(UMAP_BC_BY_CLASS.out.umap_svg)
 
     NORMALIZE (
         BATCH_CORRECT.out.batch_corrected_csv,
@@ -112,6 +117,7 @@ workflow GEX {
         random_seed
     )
     ch_versions = ch_versions.mix(UMAP_NORM_BY_BATCH.out.versions)
+    ch_visuals = ch_visuals.mix(UMAP_NORM_BY_BATCH.out.umap_svg)
 
     UMAP_NORM_BY_CLASS (
         "normalized.by_class",
@@ -121,6 +127,7 @@ workflow GEX {
         random_seed
     )
     ch_versions = ch_versions.mix(UMAP_NORM_BY_CLASS.out.versions)
+    ch_visuals = ch_visuals.mix(UMAP_NORM_BY_CLASS.out.umap_svg)
 
     TRANSPOSE (
         NORMALIZE.out.normalized_csv,
@@ -144,6 +151,7 @@ workflow GEX {
     versions       = ch_versions                 // channel: [ path(versions.yml) ]
     transposed_csv = TRANSPOSE.out.transposed_csv
     classes_tsv    = ch_classes                  // channel: path(classes.tsv)
+    visuals        = ch_visuals                  // channel: path(*.png|*.svg)
 }
 
 /*

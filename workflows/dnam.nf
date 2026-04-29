@@ -34,6 +34,7 @@ workflow DNAM {
     main:
 
     ch_versions = channel.empty()
+    ch_visuals = channel.empty()
 
     //
     // Build per-sample DNAm channels from precomputed inputs
@@ -164,8 +165,8 @@ workflow DNAM {
         .map { dataset_name, sample_names, beta_paths ->
             // Sort by sample_name to ensure deterministic chunk order for caching
             def sorted_pairs = [sample_names, beta_paths].transpose().sort { a, b -> a[0] <=> b[0] }
-            def sorted_samples = sorted_pairs.collect { it[0] }
-            def sorted_paths = sorted_pairs.collect { it[1] }
+            def sorted_samples = sorted_pairs.collect { pair -> pair[0] }
+            def sorted_paths = sorted_pairs.collect { pair -> pair[1] }
             [
                 dataset_name,
                 sorted_samples,
@@ -215,9 +216,10 @@ workflow DNAM {
         random_seed
     )
     ch_versions = ch_versions.mix(UMAP_DNAM_BY_CLASS.out.versions)
+    ch_visuals = ch_visuals.mix(UMAP_DNAM_BY_CLASS.out.umap_svg)
 
     TRANSPOSE (
-        FILTER_BY_VARIANCE.out.variance_filtered_betas.map { dataset_name, sample_name, betas -> betas },
+        FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, betas -> betas },
         "dnam"
     )
     ch_versions = ch_versions.mix(TRANSPOSE.out.versions)
@@ -236,6 +238,7 @@ workflow DNAM {
     emit:
     versions = ch_versions // channel: [ path(versions.yml) ]
     transposed_csv = TRANSPOSE.out.transposed_csv
+    visuals = ch_visuals // channel: path(*.png|*.svg)
 
 }
 

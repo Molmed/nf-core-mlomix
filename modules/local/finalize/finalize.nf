@@ -10,22 +10,29 @@ process FINALIZE {
     path classes_file
     path dnam_transposed
     path gex_transposed
+    path visual_files
 
     output:
     path "labels.csv", emit: labels_csv
     path "features.dnam.csv", emit: dnam_features_csv
     path "features.gex.csv", emit: gex_features_csv
+    path "visuals", emit: visuals_dir
     path "versions.yml", emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
+    def visual_file_names = (visual_files instanceof List ? visual_files : [visual_files])
+        .collect { visual_file -> "\"${visual_file.name}\"" }
+        .join(', ')
     """
     #!/usr/bin/env python3
 
     import pandas as pd
     import sys
+    import os
+    import shutil
 
     # Read labels (classes)
     labels = pd.read_csv("${classes_file}", sep="\t", index_col=0)
@@ -49,6 +56,27 @@ process FINALIZE {
         # Create empty GEX file if not provided
         pd.DataFrame().to_csv("features.gex.csv", sep=",")
 
+    # Copy visual artifacts into visuals/ sub-directory
+    os.makedirs("visuals", exist_ok=True)
+    visual_inputs = [${visual_file_names}]
+    for visual_path in visual_inputs:
+        if not visual_path.lower().endswith((".png", ".svg")):
+            continue
+
+        destination = os.path.join("visuals", os.path.basename(visual_path))
+        if not os.path.exists(destination):
+            shutil.copy2(visual_path, destination)
+            continue
+
+        stem, ext = os.path.splitext(os.path.basename(visual_path))
+        idx = 1
+        while True:
+            candidate = os.path.join("visuals", f"{stem}.{idx}{ext}")
+            if not os.path.exists(candidate):
+                shutil.copy2(visual_path, candidate)
+                break
+            idx += 1
+
     # Create versions file
     import pandas
     with open("versions.yml", "w") as f:
@@ -62,6 +90,7 @@ process FINALIZE {
     touch labels.csv
     touch features.dnam.csv
     touch features.gex.csv
+    mkdir -p visuals
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
