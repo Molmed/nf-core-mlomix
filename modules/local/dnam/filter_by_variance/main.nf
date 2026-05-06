@@ -31,7 +31,7 @@ process FILTER_BY_VARIANCE {
     if (args) {
         cli_args << args
     }
-    def cli_args_block = cli_args.join(' \\\n+        ')
+    def cli_args_block = cli_args.join(' \\\n        ')
     def beta_output_name = "${dataset_name}__${sample_name}.variance_filtered_betas.csv"
     def before_png_name = "${dataset_name}__${sample_name}.variance_distribution_before_filtering.png"
     def before_svg_name = "${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg"
