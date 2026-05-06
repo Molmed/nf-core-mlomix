@@ -8,7 +8,7 @@ include { CONCATENATE_DNAM       } from '../modules/local/dnam/concatenate_dnam'
 include { MERGE_DATASETS         } from '../modules/local/dnam/merge_datasets'
 include { COMPRESS_DNAM          } from '../modules/local/dnam/compress_dnam/main'
 include { P_VAL_CORRECTION       } from '../modules/local/dnam/p_val_correction/main'
-include { FILTER_COMMON_PROBES   } from '../modules/local/dnam/filter_common_probes/main'
+include { FILTER_PROBES_BY_LIST  } from '../modules/local/dnam/filter_probes_by_list/main'
 include { FILTER_BY_MISSING      } from '../modules/local/dnam/filter_by_missing/main'
 include { FILTER_BY_VARIANCE     } from '../modules/local/dnam/filter_by_variance/main'
 include { UMAP as UMAP_DNAM_BY_CLASS } from '../modules/local/umap/umap'
@@ -35,6 +35,9 @@ workflow DNAM {
 
     ch_versions = channel.empty()
     ch_visuals = channel.empty()
+    ch_dnam_probe_list = channel.value(file(params.dnam_probes_file ?: params.common_probes, checkIfExists: true))
+    def skip_missing_filter = (params.dnam_probes_file != null) || params.dnam_skip_filter_by_missing
+    def skip_variance_filter = (params.dnam_probes_file != null) || params.dnam_skip_filter_by_variance
 
     //
     // Build per-sample DNAm channels from precomputed inputs
@@ -152,15 +155,13 @@ workflow DNAM {
     //
     // MODULE: Filter DNAm betas per sample (common probes -> missingness -> variance)
     //
-    ch_common_probes = channel.value(file(params.common_probes, checkIfExists: true))
-
-    FILTER_COMMON_PROBES (
+    FILTER_PROBES_BY_LIST (
         ch_corrected_or_passthrough_betas,
-        ch_common_probes
+        ch_dnam_probe_list
     )
-    ch_versions = ch_versions.mix(FILTER_COMMON_PROBES.out.versions)
+    ch_versions = ch_versions.mix(FILTER_PROBES_BY_LIST.out.versions)
 
-    ch_common_filtered_by_dataset = FILTER_COMMON_PROBES.out.filtered_betas
+    ch_common_filtered_by_dataset = FILTER_PROBES_BY_LIST.out.filtered_betas
         .groupTuple()
         .map { dataset_name, sample_names, beta_paths ->
             // Sort by sample_name to ensure deterministic chunk order for caching
@@ -198,19 +199,32 @@ workflow DNAM {
             ["merged_datasets", "merged_datasets", beta_matrix]
         }
 
-    FILTER_BY_MISSING (
-        ch_dataset_betas_for_missing
-    )
-    ch_versions = ch_versions.mix(FILTER_BY_MISSING.out.versions)
+    ch_missing_filtered_betas = ch_dataset_betas_for_missing
+    if (!skip_missing_filter) {
+        FILTER_BY_MISSING (
+            ch_dataset_betas_for_missing
+        )
+        ch_versions = ch_versions.mix(FILTER_BY_MISSING.out.versions)
+        ch_missing_filtered_betas = FILTER_BY_MISSING.out.missing_filtered_betas
+    }
 
-    FILTER_BY_VARIANCE (
-        FILTER_BY_MISSING.out.missing_filtered_betas
-    )
-    ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
+    ch_variance_input_betas = ch_missing_filtered_betas
+    if (!skip_variance_filter) {
+        FILTER_BY_VARIANCE (
+            ch_missing_filtered_betas
+        )
+        ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
+        ch_variance_input_betas = FILTER_BY_VARIANCE.out.variance_filtered_betas
+
+        ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_png)
+        ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_svg)
+        ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_png)
+        ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_svg)
+    }
 
     UMAP_DNAM_BY_CLASS (
         "dnam.by_class",
-        FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, betas -> betas },
+        ch_variance_input_betas.map { _dataset_name, _sample_name, betas -> betas },
         ch_classes,
         false,
         random_seed
@@ -219,7 +233,7 @@ workflow DNAM {
     ch_visuals = ch_visuals.mix(UMAP_DNAM_BY_CLASS.out.umap_svg)
 
     TRANSPOSE (
-        FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, betas -> betas },
+        ch_variance_input_betas.map { _dataset_name, _sample_name, betas -> betas },
         "dnam"
     )
     ch_versions = ch_versions.mix(TRANSPOSE.out.versions)

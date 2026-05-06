@@ -1,5 +1,5 @@
-process FILTER_COMMON_PROBES {
-    tag "filter_common_probes"
+process FILTER_PROBES_BY_LIST {
+    tag "filter_probes_by_list"
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
@@ -20,10 +20,10 @@ process FILTER_COMMON_PROBES {
     def args = task.ext.args ?: ''
     def output_name = "${dataset_name}__${sample_name}.filtered_betas.tsv"
     """
-    filter_common_probes.py \\
-        --sample-name ${sample_name} \\
-        --betas ${betas} \\
-        --probes ${probe_list} \\
+    filter_probes_by_list.py \
+        --sample-name ${sample_name} \
+        --betas ${betas} \
+        --probes ${probe_list} \
         ${args}
 
     mv filtered_betas.tsv ${output_name}

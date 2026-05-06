@@ -125,6 +125,14 @@
                     "description": "Path to list of methylation probes to retain.",
                     "fa_icon": "far fa-file-alt"
                 },
+                "dnam_probes_file": {
+                    "type": ["string", "null"],
+                    "format": "file-path",
+                    "exists": true,
+                    "default": null,
+                    "description": "Optional path to a CpG list with one site per line to use instead of the common probes list.",
+                    "fa_icon": "far fa-file-alt"
+                },
                 "dnam_missing_threshold": {
                     "type": "number",
                     "default": 0.1,
@@ -148,6 +156,18 @@
                     "default": null,
                     "description": "If set, keep only this many top-variance DNAM features and ignore dnam_variance_threshold.",
                     "fa_icon": "fas fa-sort-amount-down"
+                },
+                "dnam_skip_filter_by_missing": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip DNAM missing-value filtering.",
+                    "fa_icon": "fas fa-ban"
+                },
+                "dnam_skip_filter_by_variance": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip DNAM variance filtering.",
+                    "fa_icon": "fas fa-ban"
                 },
                 "gex_min_samples_per_class": {
                     "type": "integer",
