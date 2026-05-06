@@ -103,7 +103,7 @@ try:
             # If TSV has index=class and Count column, write index
             with open('class_names.gex.txt', 'w') as f:
                 for cls in gex_classes_df.index.tolist():
-                    f.write(f"{cls}\n")
+                    f.write(f"{cls}\\n")
         except Exception:
             # Fallback: try reading as single-column file
             try:
@@ -111,7 +111,7 @@ try:
                     for line in fin:
                         parts = line.strip().split('\t')
                         if parts:
-                            fout.write(parts[0] + '\n')
+                            fout.write(parts[0] + '\\n')
             except Exception:
                 open('class_names.gex.txt', 'w').close()
     else:
@@ -125,14 +125,14 @@ try:
             dnam_classes_df = pd.read_csv("${dnam_classes_filtered}", sep="\t", index_col=0)
             with open('class_names.dnam.txt', 'w') as f:
                 for cls in dnam_classes_df.index.tolist():
-                    f.write(f"{cls}\n")
+                    f.write(f"{cls}\\n")
         except Exception:
             try:
                 with open("${dnam_classes_filtered}") as fin, open('class_names.dnam.txt', 'w') as fout:
                     for line in fin:
                         parts = line.strip().split('\t')
                         if parts:
-                            fout.write(parts[0] + '\n')
+                            fout.write(parts[0] + '\\n')
             except Exception:
                 open('class_names.dnam.txt', 'w').close()
     else:
