@@ -106,6 +106,12 @@
                     "description": "Use filtered GEX annotations (*.annotations.filtered.csv). If false, use full annotations (*.annotations.full.csv).",
                     "fa_icon": "fas fa-filter"
                 },
+                "gex_use_combat_seq_group": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Pass class labels to ComBat_seq for GEX batch correction. If false, set group to NULL and full_mod to FALSE in ComBat_seq.",
+                    "fa_icon": "fas fa-layer-group"
+                },
                 "random_seed": {
                     "type": "integer",
                     "default": 42,

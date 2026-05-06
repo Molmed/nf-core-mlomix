@@ -9,7 +9,7 @@ process BATCH_CORRECT {
     input:
     path gex_path
     path batches_file
-    path subtypes_file
+    path classes_file
 
     output:
     path "batch_corrected.csv", emit: batch_corrected_csv
@@ -24,7 +24,15 @@ process BATCH_CORRECT {
 
     library(sva)
 
-    batch_correct <- function(gex_path, sample_names, batch_df, subtypes, output_path) {
+    cat("BATCH_CORRECT: gex_use_combat_seq_group = ${params.gex_use_combat_seq_group}\n")
+
+    batch_correct <- function(gex_path, sample_names, batch_df, classes, use_group_str, output_path) {
+        # Parse the use_group parameter properly - handle both string and boolean values from Nextflow
+        use_group <- as.logical(use_group_str)
+        if (is.na(use_group)) {
+            use_group <- FALSE
+        }
+
         x <- read.csv(gex_path, row.names = 1, header= TRUE, check.names = FALSE)
 
         # batch_df must contain sample and batch columns.
@@ -69,32 +77,29 @@ process BATCH_CORRECT {
 
         counts <- round(counts)
 
-        # Use group parameter only if matched subtypes have >1 non-empty unique value
+        # Use group parameter only when use_group is TRUE and matched classes have >1 non-empty unique value.
         group <- NULL
-        if (!is.null(subtypes)) {
-            matched_group <- as.character(subtypes[ordered_idx])
+        full_mod <- FALSE
+        if (use_group) {
+            matched_group <- as.character(classes[ordered_idx])
             valid_group <- !is.na(matched_group) & matched_group != ""
             if (sum(valid_group) > 1 && length(unique(matched_group[valid_group])) > 1) {
                 group <- matched_group
+                full_mod <- TRUE
             }
         }
 
-        # Call ComBat_seq with or without group parameter
-        if (!is.null(group)) {
-            correcteddata <- ComBat_seq(counts = counts, batch=batch, group=group)
-        } else {
-            correcteddata <- ComBat_seq(counts = counts, batch=batch)
-        }
+        correcteddata <- ComBat_seq(counts = counts, batch=batch, group=group, full_mod=full_mod)
         write.csv(correcteddata, output_path)
     }
 
     batches_df <- read.csv("${batches_file}", sep="\t", header=TRUE, stringsAsFactors=FALSE)
     sample_names <- batches_df\$sample
 
-    subtypes_df <- read.csv("${subtypes_file}", sep="\t", header=TRUE, stringsAsFactors=FALSE)
-    subtypes <- subtypes_df\$class
+    classes_df <- read.csv("${classes_file}", sep="\t", header=TRUE, stringsAsFactors=FALSE)
+    classes <- classes_df\$class
 
-    batch_correct("${gex_path}", sample_names, batches_df, subtypes, "batch_corrected.csv")
+    batch_correct("${gex_path}", sample_names, batches_df, classes, "${params.gex_use_combat_seq_group}", "batch_corrected.csv")
 
     # Create versions file
     writeLines(c(
