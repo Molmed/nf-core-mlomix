@@ -137,6 +137,12 @@
                     "description": "Drop DNAM features with variance lower than or equal to this threshold.",
                     "fa_icon": "fas fa-wave-square"
                 },
+                "dnam_samples_per_chunk": {
+                    "type": "integer",
+                    "default": 200,
+                    "description": "Number of samples per chunk when batching DNAM per-dataset operations (used to collate sample files).",
+                    "fa_icon": "fas fa-th-large"
+                },
                 "dnam_variance_keep_top_sites": {
                     "type": ["integer", "null"],
                     "default": null,
