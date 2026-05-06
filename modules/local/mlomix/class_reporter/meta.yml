@@ -22,16 +22,26 @@ input:
         pattern: "*.{csv,tsv}"
 
 output:
-  - class_plot:
-      - "class_distribution.svg":
-          type: file
-          description: Bar chart of the class distribution across samples
-          pattern: "class_distribution.svg"
-  - class_csv:
-      - "class_distribution.csv":
-          type: file
-          description: CSV file with the count of samples per class
-          pattern: "class_distribution.csv"
+  - class_plot_gex:
+    - "class_distribution.gex.svg":
+      type: file
+      description: Bar chart of the class distribution for GEX samples
+      pattern: "class_distribution.gex.svg"
+  - class_plot_dnam:
+    - "class_distribution.dnam.svg":
+      type: file
+      description: Bar chart of the class distribution for DNAM samples
+      pattern: "class_distribution.dnam.svg"
+  - classes_gex:
+    - "classes.gex.tsv":
+      type: file
+      description: TSV file with the count of GEX samples per class
+      pattern: "classes.gex.tsv"
+  - classes_dnam:
+    - "classes.dnam.tsv":
+      type: file
+      description: TSV file with the count of DNAM samples per class
+      pattern: "classes.dnam.tsv"
   - versions:
       - "versions.yml":
           type: file

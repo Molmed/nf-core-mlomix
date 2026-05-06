@@ -9,8 +9,10 @@ process CLASS_REPORTER {
     path samplesheet
 
     output:
-    path "class_distribution.svg"  , emit: class_plot
-    path "class_distribution.csv"  , emit: class_csv
+    path "class_distribution.gex.svg"  , emit: class_plot_gex
+    path "class_distribution.dnam.svg" , emit: class_plot_dnam
+    path "classes.gex.tsv"            , emit: classes_gex
+    path "classes.dnam.tsv"           , emit: classes_dnam
     path "versions.yml"            , emit: versions
 
     when:
@@ -32,7 +34,7 @@ process CLASS_REPORTER {
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
-    def plot_class_distribution(y_series, title):
+    def plot_class_distribution(y_series, title, outname):
         colormap = plt.colormaps.get_cmap('tab20')
         counts = y_series.value_counts().sort_values(ascending=False)
         plt.figure(figsize=(10, 5))
@@ -45,15 +47,15 @@ process CLASS_REPORTER {
         plt.xlabel("Class")
         plt.ylabel("Count")
         plt.xticks(rotation=90)
-        plt.savefig("class_distribution.svg", bbox_inches='tight')
+        plt.savefig(outname, bbox_inches='tight')
 
-    def plot_empty(message, title):
+    def plot_empty(message, title, outname):
         plt.figure(figsize=(10, 5))
         plt.text(0.5, 0.5, message, ha='center', va='center', fontsize=14, transform=plt.gca().transAxes)
         plt.title(title)
         plt.xlabel("Class")
         plt.ylabel("Count")
-        plt.savefig("class_distribution.svg", bbox_inches='tight')
+        plt.savefig(outname, bbox_inches='tight')
 
     # Auto-detect delimiter
     samplesheet_path = "${samplesheet}"
@@ -64,21 +66,42 @@ process CLASS_REPORTER {
 
     df = pd.read_csv(samplesheet_path, sep=sep)
 
-    if 'class' not in df.columns:
-        print("WARNING: Samplesheet does not contain a 'class' column. Generating empty report.")
-        plot_empty("No 'class' column found in samplesheet", "Class Distribution")
-        pd.DataFrame(columns=["class", "Count"]).to_csv("class_distribution.csv", index=False)
-    else:
-        classes = df['class'].dropna()
+    # Determine modality by presence of GEX/DNAM-specific columns
+    has_gex = df['gex_feature_counts_file'].notna() if 'gex_feature_counts_file' in df.columns else pd.Series([False] * len(df))
+    has_dnam = (df['dnam_beta_matrix_file'].notna() | df['dnam_pvals_file'].notna() | df['idats_basename'].notna()) if any(c in df.columns for c in ['dnam_beta_matrix_file','dnam_pvals_file','idats_basename']) else pd.Series([False] * len(df))
+
+    # For each modality produce TSV and SVG
+    def handle_modality(mask, modality_label, tsv_name, svg_name):
+        subdf = df[mask]
+        if 'class' not in subdf.columns:
+            print(f"WARNING: Samplesheet does not contain a 'class' column for {modality_label}. Generating empty report.")
+            plot_empty(f"No 'class' column found for {modality_label}", f"Class Distribution ({modality_label})", svg_name)
+            pd.DataFrame(columns=["class", "Count"]).to_csv(tsv_name, sep='\t', index=False)
+            return
+        classes = subdf['class'].dropna()
         if classes.empty:
-            print("WARNING: 'class' column is present but contains no values. Generating empty report.")
-            plot_empty("'class' column has no values", "Class Distribution")
-            pd.DataFrame(columns=["class", "Count"]).to_csv("class_distribution.csv", index=False)
+            print(f"WARNING: 'class' column present for {modality_label} but contains no values. Generating empty report.")
+            plot_empty(f"'class' column has no values for {modality_label}", f"Class Distribution ({modality_label})", svg_name)
+            pd.DataFrame(columns=["class", "Count"]).to_csv(tsv_name, sep='\t', index=False)
         else:
-            plot_class_distribution(classes, "Class Distribution")
-            classes.value_counts().sort_values(ascending=False).to_csv(
-                "class_distribution.csv", header=["Count"]
-            )
+            plot_class_distribution(classes, f"Class Distribution ({modality_label})", svg_name)
+            vc = classes.value_counts().sort_values(ascending=False)
+            vc.to_csv(tsv_name, sep='\t', header=["Count"], index_label='class')
+
+    # Handle GEX
+    if has_gex.any():
+        handle_modality(has_gex, 'GEX', 'classes.gex.tsv', 'class_distribution.gex.svg')
+    else:
+        # no GEX samples
+        plot_empty('No GEX samples found', 'Class Distribution (GEX)', 'class_distribution.gex.svg')
+        pd.DataFrame(columns=["class", "Count"]).to_csv('classes.gex.tsv', sep='\t', index=False)
+
+    # Handle DNAM
+    if has_dnam.any():
+        handle_modality(has_dnam, 'DNAM', 'classes.dnam.tsv', 'class_distribution.dnam.svg')
+    else:
+        plot_empty('No DNAM samples found', 'Class Distribution (DNAM)', 'class_distribution.dnam.svg')
+        pd.DataFrame(columns=["class", "Count"]).to_csv('classes.dnam.tsv', sep='\t', index=False)
 
     # Create versions file
     import numpy
@@ -92,8 +115,10 @@ process CLASS_REPORTER {
 
     stub:
     """
-    touch class_distribution.svg
-    touch class_distribution.csv
+    touch class_distribution.gex.svg
+    touch class_distribution.dnam.svg
+    touch classes.gex.tsv
+    touch classes.dnam.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
