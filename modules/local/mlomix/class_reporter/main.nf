@@ -25,8 +25,10 @@ process CLASS_FILTER_AND_REPORT {
     task.ext.when == null || task.ext.when
 
     script:
+    def gex_class_file_arg = params.gex_class_file ? "--gex-class-file ${params.gex_class_file}" : ""
+    def dnam_class_file_arg = params.dnam_class_file ? "--dnam-class-file ${params.dnam_class_file}" : ""
     """
-    python3 ${projectDir}/bin/class_filter_and_report.py ${samplesheet} --gex-min ${params.gex_min_samples_per_class} --dnam-min ${params.dnam_min_samples_per_class}
+    python3 ${projectDir}/bin/class_filter_and_report.py ${samplesheet} --gex-min ${params.gex_min_samples_per_class} --dnam-min ${params.dnam_min_samples_per_class} ${gex_class_file_arg} ${dnam_class_file_arg}
     """
 
     stub:

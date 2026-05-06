@@ -180,6 +180,22 @@
                     "default": 3,
                     "description": "Minimum number of samples per class for DNAM modality; classes with fewer samples are filtered out.",
                     "fa_icon": "fas fa-filter"
+                },
+                "gex_class_file": {
+                    "type": ["string", "null"],
+                    "format": "file-path",
+                    "exists": true,
+                    "default": null,
+                    "description": "Optional path to a file listing GEX class names to retain (one per line). If specified, overrides gex_min_samples_per_class.",
+                    "fa_icon": "far fa-file-alt"
+                },
+                "dnam_class_file": {
+                    "type": ["string", "null"],
+                    "format": "file-path",
+                    "exists": true,
+                    "default": null,
+                    "description": "Optional path to a file listing DNAM class names to retain (one per line). If specified, overrides dnam_min_samples_per_class.",
+                    "fa_icon": "far fa-file-alt"
                 }
             }
         },
