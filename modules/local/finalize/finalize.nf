@@ -42,19 +42,27 @@ process FINALIZE {
     # Write labels as labels.csv
     labels.to_csv("labels.csv", sep=",")
 
-    # Read and reindex DNAM features
-    dnam = pd.read_csv("${dnam_transposed}", sep=",", index_col=0)
-    dnam = dnam.loc[label_samples]
-    dnam.to_csv("features.dnam.csv", sep=",")
+    # Read and reindex DNAM features (only if file provided and not empty)
+    try:
+        dnam = pd.read_csv("${dnam_transposed}", sep=",", index_col=0)
+        dnam = dnam.loc[label_samples]
+        if not dnam.empty:
+            dnam.to_csv("features.dnam.csv", sep=",")
+        else:
+            pd.DataFrame().to_csv("features.dnam.csv", sep=",")
+    except FileNotFoundError:
+        pd.DataFrame().to_csv("features.dnam.csv", sep=",")  # Create empty file
 
     # Read and reindex GEX features (only if file provided and not empty)
     try:
         gex = pd.read_csv("${gex_transposed}", sep=",", index_col=0)
         gex = gex.loc[label_samples]
-        gex.to_csv("features.gex.csv", sep=",")
+        if not gex.empty:
+            gex.to_csv("features.gex.csv", sep=",")
+        else:
+            pd.DataFrame().to_csv("features.gex.csv", sep=",")
     except FileNotFoundError:
-        # Create empty GEX file if not provided
-        pd.DataFrame().to_csv("features.gex.csv", sep=",")
+        pd.DataFrame().to_csv("features.gex.csv", sep=",")  # Create empty file
 
     # Copy visual artifacts into visuals/ sub-directory
     os.makedirs("visuals", exist_ok=True)

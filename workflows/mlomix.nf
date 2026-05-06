@@ -35,6 +35,7 @@ workflow MLOMIX {
 
     ch_versions = channel.empty()
     ch_gex_transposed = channel.empty()
+    ch_dnam_transposed = channel.empty()
     ch_classes_tsv = channel.empty()
     ch_visuals = channel.empty()
 
@@ -107,7 +108,8 @@ workflow MLOMIX {
         ch_use_precomputed_dnam_gated
     )
     ch_versions = ch_versions.mix(DNAM.out.versions)
-    ch_dnam_transposed = DNAM.out.transposed_csv
+    ch_dnam_transposed = DNAM.out.transposed_csv.ifEmpty(file("${params.outdir}/.dnam_placeholder"))
+    ch_gex_transposed = ch_gex_transposed.ifEmpty(file("${params.outdir}/.gex_placeholder"))
     ch_visuals = ch_visuals.mix(DNAM.out.visuals)
 
     FINALIZE (
