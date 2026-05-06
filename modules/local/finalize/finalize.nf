@@ -39,7 +39,8 @@ process FINALIZE {
     labels = labels.iloc[:, 0]
     label_samples = labels.index.tolist()
 
-    # Write labels as labels.csv
+    # Write labels as labels.csv with index renamed to "id"
+    labels.index.name = "id"
     labels.to_csv("labels.csv", sep=",")
 
     # Read and reindex DNAM features (only if file provided and not empty)
