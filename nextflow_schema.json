@@ -100,7 +100,7 @@
                     "description": "Directory for cached processed annotation assets (GTF/SAF/parsed/filtered) keyed by genome and annotation version.",
                     "fa_icon": "far fa-folder-open"
                 },
-                "use_filtered_annotations": {
+                "gex_use_filtered_annotations": {
                     "type": "boolean",
                     "default": true,
                     "description": "Use filtered GEX annotations (*.annotations.filtered.csv). If false, use full annotations (*.annotations.full.csv).",
@@ -125,13 +125,13 @@
                     "description": "Path to list of methylation probes to retain.",
                     "fa_icon": "far fa-file-alt"
                 },
-                "missing_threshold": {
+                "dnam_missing_threshold": {
                     "type": "number",
                     "default": 0.1,
                     "description": "Drop DNAM features with a missing-value fraction higher than this threshold.",
                     "fa_icon": "fas fa-percent"
                 },
-                "variance_threshold": {
+                "dnam_variance_threshold": {
                     "type": "number",
                     "default": 0.01,
                     "description": "Drop DNAM features with variance lower than or equal to this threshold.",

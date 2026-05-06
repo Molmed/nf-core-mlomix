@@ -21,7 +21,7 @@ process FILTER_BY_MISSING {
     """
     filter_by_missing.py \
         --betas ${betas} \
-        --missing_threshold ${params.missing_threshold} \
+        --missing_threshold ${params.dnam_missing_threshold} \
         ${args}
 
     mv missing_filtered_betas.csv ${output_name}

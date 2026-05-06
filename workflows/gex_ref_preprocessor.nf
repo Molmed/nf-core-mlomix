@@ -28,7 +28,7 @@ workflow GEX_REF_PREPROCESSOR {
     ch_missing_annotation_version = channel.empty()
     ch_full_genome_name_missing = channel.empty()
 
-    def annotation_suffix = params.use_filtered_annotations ? 'annotations.filtered.csv' : 'annotations.full.csv'
+    def annotation_suffix = params.gex_use_filtered_annotations ? 'annotations.filtered.csv' : 'annotations.full.csv'
 
     ch_cached_annotations = genome
         .combine(annotation_version)
@@ -93,7 +93,7 @@ workflow GEX_REF_PREPROCESSOR {
         )
 
     emit:
-    filtered_annotations = params.use_filtered_annotations
+    filtered_annotations = params.gex_use_filtered_annotations
         ? ch_cached_annotations.mix(FILTER_ANNOTATIONS.out.filtered_annotations)
         : ch_cached_annotations.mix(PARSE_GTF.out.annotations) // channel: [ path(annotations.filtered.csv|annotations.full.csv) ]
     versions           = ch_versions                          // channel: [ path(versions.yml) ]

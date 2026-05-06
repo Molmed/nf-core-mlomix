@@ -29,7 +29,7 @@ process FILTER_BY_VARIANCE {
     """
     filter_by_variance.py \
         --betas ${betas} \
-        --variance_threshold ${params.variance_threshold} \
+        --variance_threshold ${params.dnam_variance_threshold} \
         ${args}
 
     mv variance_filtered_betas.csv ${beta_output_name}
