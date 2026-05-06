@@ -1,5 +1,5 @@
-name: "class_reporter"
-description: Extract sample class distribution from the input samplesheet and generate a report
+name: "class_filter_and_report"
+description: Filter samples by minimum class counts per modality and generate before/after reports
 keywords:
   - samplesheet
   - class
@@ -22,26 +22,56 @@ input:
         pattern: "*.{csv,tsv}"
 
 output:
-  - class_plot_gex:
-    - "class_distribution.gex.svg":
+  - class_plot_gex_all:
+    - "class_distribution.gex.all.svg":
       type: file
-      description: Bar chart of the class distribution for GEX samples
-      pattern: "class_distribution.gex.svg"
-  - class_plot_dnam:
-    - "class_distribution.dnam.svg":
+      description: Bar chart of the class distribution for GEX samples (all)
+      pattern: "class_distribution.gex.all.svg"
+  - class_plot_gex_filtered:
+    - "class_distribution.gex.filtered.svg":
       type: file
-      description: Bar chart of the class distribution for DNAM samples
-      pattern: "class_distribution.dnam.svg"
-  - classes_gex:
-    - "classes.gex.tsv":
+      description: Bar chart of the class distribution for GEX samples (filtered)
+      pattern: "class_distribution.gex.filtered.svg"
+  - class_plot_dnam_all:
+    - "class_distribution.dnam.all.svg":
       type: file
-      description: TSV file with the count of GEX samples per class
-      pattern: "classes.gex.tsv"
-  - classes_dnam:
-    - "classes.dnam.tsv":
+      description: Bar chart of the class distribution for DNAM samples (all)
+      pattern: "class_distribution.dnam.all.svg"
+  - class_plot_dnam_filtered:
+    - "class_distribution.dnam.filtered.svg":
       type: file
-      description: TSV file with the count of DNAM samples per class
-      pattern: "classes.dnam.tsv"
+      description: Bar chart of the class distribution for DNAM samples (filtered)
+      pattern: "class_distribution.dnam.filtered.svg"
+  - classes_gex_all:
+    - "classes.gex.all.tsv":
+      type: file
+      description: TSV file with the count of GEX samples per class (all)
+      pattern: "classes.gex.all.tsv"
+  - classes_gex_filtered:
+    - "classes.gex.filtered.tsv":
+      type: file
+      description: TSV file with the count of GEX samples per class (filtered)
+      pattern: "classes.gex.filtered.tsv"
+  - classes_dnam_all:
+    - "classes.dnam.all.tsv":
+      type: file
+      description: TSV file with the count of DNAM samples per class (all)
+      pattern: "classes.dnam.all.tsv"
+  - classes_dnam_filtered:
+    - "classes.dnam.filtered.tsv":
+      type: file
+      description: TSV file with the count of DNAM samples per class (filtered)
+      pattern: "classes.dnam.filtered.tsv"
+  - samplesheet_filtered:
+    - "samplesheet.filtered.tsv":
+      type: file
+      description: Filtered samplesheet with samples that meet minimum class thresholds
+      pattern: "samplesheet.filtered.tsv"
+  - kept_sample_ids:
+    - "kept_sample_ids.txt":
+      type: file
+      description: Plain text file with one sample ID per line for samples that passed filtering
+      pattern: "kept_sample_ids.txt"
   - versions:
       - "versions.yml":
           type: file

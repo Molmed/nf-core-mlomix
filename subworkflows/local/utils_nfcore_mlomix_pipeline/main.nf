@@ -11,7 +11,7 @@
 include { UTILS_NFSCHEMA_PLUGIN     } from '../../nf-core/utils_nfschema_plugin'
 include { paramsSummaryMap          } from 'plugin/nf-schema'
 include { samplesheetToList         } from 'plugin/nf-schema'
-include { CLASS_REPORTER            } from '../../../modules/local/mlomix/class_reporter/main'
+include { CLASS_FILTER_AND_REPORT   } from '../../../modules/local/mlomix/class_reporter/main'
 include { completionEmail           } from '../../nf-core/utils_nfcore_pipeline'
 include { completionSummary         } from '../../nf-core/utils_nfcore_pipeline'
 include { imNotification            } from '../../nf-core/utils_nfcore_pipeline'
@@ -98,11 +98,11 @@ workflow PIPELINE_INITIALISATION {
     validateInputParameters()
 
     //
-    // Shared class report, generated once before any workflow branching
+    // Shared class report (filter + report), generated once before any workflow branching
     //
     ch_samplesheet_report = channel.fromPath(params.input, checkIfExists: true)
-    CLASS_REPORTER(ch_samplesheet_report)
-    ch_versions = ch_versions.mix(CLASS_REPORTER.out.versions)
+    CLASS_FILTER_AND_REPORT(ch_samplesheet_report)
+    ch_versions = ch_versions.mix(CLASS_FILTER_AND_REPORT.out.versions)
 
     //
     // Create channels from combined GEX + DNAM samplesheet
@@ -119,6 +119,9 @@ workflow PIPELINE_INITIALISATION {
         error("GEX input was detected but '--annotation_version' is missing. Please provide an Ensembl release (e.g. --annotation_version 109).")
     }
 
+    // Note: CLASS_FILTER_AND_REPORT outputs filtered samplesheet (samplesheet.filtered.tsv) and kept sample IDs
+    // for reference, but downstream workflows use the full original samplesheet. To exclude samples from
+    // downstream analysis, you can manually use the filtered samplesheet as input instead.
     ch_rows = channel.value(parsed_rows)
 
     ch_rows
@@ -168,11 +171,10 @@ workflow PIPELINE_INITIALISATION {
                      newLine: false,
                      storeDir: "${params.outdir}/class")
         .set { ch_classes }
-
-    // Create separate channel for DNAM using fresh reference to avoid double-subscription issues
-    // Wrap in another list to prevent combine() from flattening the rows
+                                                    
+    // Create separate channel for DNAM using the full rows (same data as GEX, pre-filtered by CLASS_FILTER_AND_REPORT separately)
     channel.value([parsed_rows])
-        .map { it -> it[0] }  // Unwrap to get back the list of rows
+        .map { it -> it[0] }
         .set { ch_dnam_samplesheet }
 
     ch_dnam_beta_matrix = channel.empty()
