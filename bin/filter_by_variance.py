@@ -4,6 +4,7 @@
 
 import argparse
 import os
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -24,9 +25,10 @@ def read_beta_matrix(file_path: str) -> pd.DataFrame:
 
 def plot_variance_distribution(
     variances: pd.Series,
-    threshold: float,
+    threshold: Optional[float],
     title: str,
     output_prefix: str,
+    threshold_label: str = "Threshold",
 ) -> None:
     """Save histogram of feature variances as PNG and SVG."""
     plt.figure(figsize=(10, 6))
@@ -34,14 +36,16 @@ def plot_variance_distribution(
     plt.title(title)
     plt.xlabel("Variance", fontsize=14)
     plt.ylabel("Frequency", fontsize=14)
-    plt.axvline(
-        x=threshold,
-        color="red",
-        linestyle="--",
-        label=f"Threshold ({threshold})",
-        linewidth=2,
-    )
-    plt.legend(fontsize=12)
+    if threshold is not None:
+        plt.axvline(
+            x=threshold,
+            color="red",
+            linestyle="--",
+            label=f"{threshold_label} ({threshold})",
+            linewidth=2,
+        )
+    if threshold is not None:
+        plt.legend(fontsize=12)
     plt.grid(axis="y", alpha=0.75)
     plt.tight_layout()
     plt.savefig(f"{output_prefix}.png", dpi=300)
@@ -94,6 +98,55 @@ def remove_low_variance_features(
     return filtered_df
 
 
+def keep_top_variance_features(
+    beta_df: pd.DataFrame, keep_top_sites: int
+) -> pd.DataFrame:
+    """Keep the N rows/probes with highest variance."""
+    print(f"Dataframe shape before filtering: {beta_df.shape}")
+    variances = beta_df.var(axis=1)
+
+    print("Variance statistics before filtering:")
+    print(variances.describe())
+
+    available_sites = len(variances)
+    sites_to_keep = min(keep_top_sites, available_sites)
+    if keep_top_sites > available_sites:
+        print(
+            f"Requested top {keep_top_sites} sites, but only "
+            f"{available_sites} are available. Keeping all sites."
+        )
+
+    cutoff_variance = variances.nlargest(sites_to_keep).min()
+    print(f"Keeping top variance sites: {sites_to_keep}")
+    print(f"Variance cutoff at rank {sites_to_keep}: {cutoff_variance}")
+
+    plot_variance_distribution(
+        variances=variances,
+        threshold=cutoff_variance,
+        threshold_label="Top-N cutoff",
+        title="Variance distribution before variance filtering",
+        output_prefix="variance_distribution_before_filtering",
+    )
+
+    top_indices = variances.nlargest(sites_to_keep).index
+    filtered_df = beta_df.loc[top_indices, :]
+    print(f"Dataframe shape after filtering: {filtered_df.shape}")
+
+    variances_after = filtered_df.var(axis=1)
+    print("Variance statistics after filtering:")
+    print(variances_after.describe())
+
+    plot_variance_distribution(
+        variances=variances_after,
+        threshold=cutoff_variance,
+        threshold_label="Top-N cutoff",
+        title="Variance distribution after variance filtering",
+        output_prefix="variance_distribution_after_filtering",
+    )
+
+    return filtered_df
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Remove low-variance features and plot distributions"
@@ -110,15 +163,33 @@ def main() -> None:
             "(default: 0.01)"
         ),
     )
+    parser.add_argument(
+        "--keep_top_sites",
+        type=int,
+        default=None,
+        help=(
+            "If provided, keep only the N highest-variance features and "
+            "ignore --variance_threshold."
+        ),
+    )
     parser.add_argument("--outdir", default=".", help="Output directory")
     args = parser.parse_args()
 
     if args.variance_threshold < 0:
         raise ValueError("--variance_threshold must be >= 0")
+    if args.keep_top_sites is not None and args.keep_top_sites <= 0:
+        raise ValueError("--keep_top_sites must be >= 1")
 
     print("=== Filter By Variance ===")
     print(f"Beta values file: {args.betas}")
-    print(f"Variance threshold: {args.variance_threshold}\n")
+    if args.keep_top_sites is not None:
+        print(
+            f"Keep top variance sites: {args.keep_top_sites} "
+            "(overrides variance threshold)"
+        )
+    else:
+        print(f"Variance threshold: {args.variance_threshold}")
+    print()
 
     os.makedirs(args.outdir, exist_ok=True)
     os.chdir(args.outdir)
@@ -126,9 +197,12 @@ def main() -> None:
     beta_df = read_beta_matrix(args.betas)
     print(f"Input matrix shape: {beta_df.shape}\n")
 
-    filtered_df = remove_low_variance_features(
-        beta_df, args.variance_threshold
-    )
+    if args.keep_top_sites is not None:
+        filtered_df = keep_top_variance_features(beta_df, args.keep_top_sites)
+    else:
+        filtered_df = remove_low_variance_features(
+            beta_df, args.variance_threshold
+        )
 
     output_file = "variance_filtered_betas.csv"
     filtered_df.index.name = None

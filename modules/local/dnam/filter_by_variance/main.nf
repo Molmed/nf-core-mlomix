@@ -21,6 +21,17 @@ process FILTER_BY_VARIANCE {
 
     script:
     def args = task.ext.args ?: ''
+    def cli_args = [
+        "--betas ${betas}",
+        "--variance_threshold ${params.dnam_variance_threshold}"
+    ]
+    if (params.dnam_variance_keep_top_sites != null) {
+        cli_args << "--keep_top_sites ${params.dnam_variance_keep_top_sites}"
+    }
+    if (args) {
+        cli_args << args
+    }
+    def cli_args_block = cli_args.join(' \\\n+        ')
     def beta_output_name = "${dataset_name}__${sample_name}.variance_filtered_betas.csv"
     def before_png_name = "${dataset_name}__${sample_name}.variance_distribution_before_filtering.png"
     def before_svg_name = "${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg"
@@ -28,9 +39,7 @@ process FILTER_BY_VARIANCE {
     def after_svg_name = "${dataset_name}__${sample_name}.variance_distribution_after_filtering.svg"
     """
     filter_by_variance.py \
-        --betas ${betas} \
-        --variance_threshold ${params.dnam_variance_threshold} \
-        ${args}
+        ${cli_args_block}
 
     mv variance_filtered_betas.csv ${beta_output_name}
     mv variance_distribution_before_filtering.png ${before_png_name}
