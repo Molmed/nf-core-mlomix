@@ -21,6 +21,8 @@ workflow MLOMIX {
     ch_datasets
     ch_batches
     ch_classes
+    ch_classes_gex_filtered
+    ch_classes_dnam_filtered
     ch_dnam_samplesheet
     ch_dnam_beta_matrix
     ch_dnam_pvals
@@ -116,7 +118,9 @@ workflow MLOMIX {
         ch_classes_tsv,
         ch_dnam_transposed,
         ch_gex_transposed,
-        ch_visuals.collect()
+        ch_visuals.collect(),
+        ch_classes_gex_filtered,
+        ch_classes_dnam_filtered
     )
     ch_versions = ch_versions.mix(FINALIZE.out.versions)
 

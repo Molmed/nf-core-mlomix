@@ -11,6 +11,8 @@ process FINALIZE {
     path dnam_transposed
     path gex_transposed
     path visual_files
+    path gex_classes_filtered optional true
+    path dnam_classes_filtered optional true
 
     output:
     path "labels.csv", emit: labels_csv
@@ -19,6 +21,8 @@ process FINALIZE {
     path "feature_names.dnam.txt", emit: dnam_feature_names
     path "feature_names.gex.txt", emit: gex_feature_names
     path "visuals", emit: visuals_dir
+    path "class_names.gex.txt", emit: class_names_gex
+    path "class_names.dnam.txt", emit: class_names_dnam
     path "versions.yml", emit: versions
 
     when:
@@ -90,6 +94,51 @@ try:
         open("feature_names.gex.txt", "w").close()
 except FileNotFoundError:
     open("feature_names.gex.txt", "w").close()
+
+# Write filtered class names if provided (one per line)
+try:
+    if '${gex_classes_filtered}' != 'null' and os.path.exists("${gex_classes_filtered}"):
+        try:
+            gex_classes_df = pd.read_csv("${gex_classes_filtered}", sep="\t", index_col=0)
+            # If TSV has index=class and Count column, write index
+            with open('class_names.gex.txt', 'w') as f:
+                for cls in gex_classes_df.index.tolist():
+                    f.write(f"{cls}\n")
+        except Exception:
+            # Fallback: try reading as single-column file
+            try:
+                with open("${gex_classes_filtered}") as fin, open('class_names.gex.txt', 'w') as fout:
+                    for line in fin:
+                        parts = line.strip().split('\t')
+                        if parts:
+                            fout.write(parts[0] + '\n')
+            except Exception:
+                open('class_names.gex.txt', 'w').close()
+    else:
+        open('class_names.gex.txt', 'w').close()
+except Exception:
+    open('class_names.gex.txt', 'w').close()
+
+try:
+    if '${dnam_classes_filtered}' != 'null' and os.path.exists("${dnam_classes_filtered}"):
+        try:
+            dnam_classes_df = pd.read_csv("${dnam_classes_filtered}", sep="\t", index_col=0)
+            with open('class_names.dnam.txt', 'w') as f:
+                for cls in dnam_classes_df.index.tolist():
+                    f.write(f"{cls}\n")
+        except Exception:
+            try:
+                with open("${dnam_classes_filtered}") as fin, open('class_names.dnam.txt', 'w') as fout:
+                    for line in fin:
+                        parts = line.strip().split('\t')
+                        if parts:
+                            fout.write(parts[0] + '\n')
+            except Exception:
+                open('class_names.dnam.txt', 'w').close()
+    else:
+        open('class_names.dnam.txt', 'w').close()
+except Exception:
+    open('class_names.dnam.txt', 'w').close()
 os.makedirs("visuals", exist_ok=True)
 visual_inputs = [${visual_file_names}]
 for visual_path in visual_inputs:
@@ -125,6 +174,8 @@ with open("versions.yml", "w") as f:
     touch features.gex.csv
     touch feature_names.dnam.txt
     touch feature_names.gex.txt
+    touch class_names.gex.txt
+    touch class_names.dnam.txt
     mkdir -p visuals
 
     cat <<-END_VERSIONS > versions.yml

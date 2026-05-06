@@ -103,6 +103,8 @@ workflow PIPELINE_INITIALISATION {
     ch_samplesheet_report = channel.fromPath(params.input, checkIfExists: true)
     CLASS_FILTER_AND_REPORT(ch_samplesheet_report)
     ch_versions = ch_versions.mix(CLASS_FILTER_AND_REPORT.out.versions)
+    ch_classes_gex_filtered  = CLASS_FILTER_AND_REPORT.out.classes_gex_filtered
+    ch_classes_dnam_filtered = CLASS_FILTER_AND_REPORT.out.classes_dnam_filtered
 
     //
     // Create channels from combined GEX + DNAM samplesheet
@@ -171,7 +173,7 @@ workflow PIPELINE_INITIALISATION {
                      newLine: false,
                      storeDir: "${params.outdir}/class")
         .set { ch_classes }
-                                                    
+
     // Create separate channel for DNAM using the full rows (same data as GEX, pre-filtered by CLASS_FILTER_AND_REPORT separately)
     channel.value([parsed_rows])
         .map { it -> it[0] }
@@ -199,6 +201,8 @@ workflow PIPELINE_INITIALISATION {
     run_gex               = ch_run_gex
     run_dnam              = ch_run_dnam
     use_precomputed_dnam  = ch_use_precomputed_dnam
+    classes_gex_filtered  = ch_classes_gex_filtered
+    classes_dnam_filtered = ch_classes_dnam_filtered
     versions              = ch_versions
 }
 

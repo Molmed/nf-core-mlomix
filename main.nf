@@ -112,6 +112,8 @@ workflow {
         PIPELINE_INITIALISATION.out.datasets,
         PIPELINE_INITIALISATION.out.batches,
         PIPELINE_INITIALISATION.out.classes,
+        PIPELINE_INITIALISATION.out.classes_gex_filtered,
+        PIPELINE_INITIALISATION.out.classes_dnam_filtered,
         PIPELINE_INITIALISATION.out.dnam_samplesheet,
         PIPELINE_INITIALISATION.out.dnam_beta_matrix,
         PIPELINE_INITIALISATION.out.dnam_pvals,
