@@ -47,6 +47,8 @@ workflow NFCORE_MLOMIX {
     ch_datasets
     ch_batches
     ch_classes
+    ch_classes_gex_filtered
+    ch_classes_dnam_filtered
     ch_dnam_samplesheet
     ch_dnam_beta_matrix
     ch_dnam_pvals
@@ -67,6 +69,8 @@ workflow NFCORE_MLOMIX {
         ch_datasets,
         ch_batches,
         ch_classes,
+        ch_classes_gex_filtered,
+        ch_classes_dnam_filtered,
         ch_dnam_samplesheet,
         ch_dnam_beta_matrix,
         ch_dnam_pvals,

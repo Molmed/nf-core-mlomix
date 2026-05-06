@@ -11,8 +11,8 @@ process FINALIZE {
     path dnam_transposed
     path gex_transposed
     path visual_files
-    path gex_classes_filtered optional true
-    path dnam_classes_filtered optional true
+    path gex_classes_filtered
+    path dnam_classes_filtered
 
     output:
     path "labels.csv", emit: labels_csv
