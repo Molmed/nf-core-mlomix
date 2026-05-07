@@ -110,16 +110,6 @@ workflow GEX {
     )
     ch_versions = ch_versions.mix(NORMALIZE.out.versions)
 
-    // Variance filtering on normalized GEX before transpose
-    FILTER_BY_VARIANCE (
-        NORMALIZE.out.normalized_csv.map { f -> [ 'merged_datasets', 'merged_datasets', f ] }
-    )
-    ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
-    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_png)
-    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_svg)
-    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_png)
-    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_svg)
-
     UMAP_NORM_BY_BATCH (
         "normalized.by_batch",
         NORMALIZE.out.normalized_csv,
@@ -139,6 +129,16 @@ workflow GEX {
     )
     ch_versions = ch_versions.mix(UMAP_NORM_BY_CLASS.out.versions)
     ch_visuals = ch_visuals.mix(UMAP_NORM_BY_CLASS.out.umap_svg)
+
+    // Variance filtering on normalized GEX before transpose
+    FILTER_BY_VARIANCE (
+        NORMALIZE.out.normalized_csv.map { f -> [ 'merged_datasets', 'merged_datasets', f ] }
+    )
+    ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
+    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_png)
+    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_svg)
+    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_png)
+    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_svg)
 
     TRANSPOSE (
         FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },
