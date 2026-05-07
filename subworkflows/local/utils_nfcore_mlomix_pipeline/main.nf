@@ -105,26 +105,34 @@ workflow PIPELINE_INITIALISATION {
     ch_versions = ch_versions.mix(CLASS_FILTER_AND_REPORT.out.versions)
     ch_classes_gex_filtered  = CLASS_FILTER_AND_REPORT.out.classes_gex_filtered
     ch_classes_dnam_filtered = CLASS_FILTER_AND_REPORT.out.classes_dnam_filtered
+    ch_filtered_samplesheet_csv = CLASS_FILTER_AND_REPORT.out.samplesheet_filtered_csv
 
-    //
-    // Create channels from combined GEX + DNAM samplesheet
-    //
-    def parsed_rows = samplesheetToList(params.input, "${projectDir}/assets/schema_input.json").collect { row -> row[0] }
-    def mode_info = validateInputSamplesheetModes(parsed_rows)
-    log.info "Detected input modes: run_gex=${mode_info.run_gex}, run_dnam=${mode_info.run_dnam}, use_precomputed_dnam=${mode_info.use_precomputed_dnam}"
+    ch_rows = ch_filtered_samplesheet_csv
+        .flatMap { csv_file ->
+            samplesheetToList(csv_file, "${projectDir}/assets/schema_input.json")
+        }
+        .map { row -> row[0] }
+        .collect()
 
-    if (mode_info.run_gex && !params.genome) {
-        error("GEX input was detected but '--genome' is missing. Please provide a supported genome key (e.g. --genome GRCh38).")
-    }
+    ch_mode_info = ch_rows
+        .map { filtered_rows -> validateInputSamplesheetModes(filtered_rows) }
+        .map { mode_info ->
+            log.info "Parsed samplesheet modes: run_gex=${mode_info.run_gex}, run_dnam=${mode_info.run_dnam}, use_precomputed_dnam=${mode_info.use_precomputed_dnam}"
 
-    if (mode_info.run_gex && !params.annotation_version) {
-        error("GEX input was detected but '--annotation_version' is missing. Please provide an Ensembl release (e.g. --annotation_version 109).")
-    }
+            if (mode_info.run_gex && !params.genome) {
+                error("GEX input was detected but '--genome' is missing. Please provide a supported genome key (e.g. --genome GRCh38).")
+            }
 
-    // Note: CLASS_FILTER_AND_REPORT outputs filtered samplesheet (samplesheet.filtered.tsv) and kept sample IDs
-    // for reference, but downstream workflows use the full original samplesheet. To exclude samples from
-    // downstream analysis, you can manually use the filtered samplesheet as input instead.
-    ch_rows = channel.value(parsed_rows)
+            if (mode_info.run_gex && !params.annotation_version) {
+                error("GEX input was detected but '--annotation_version' is missing. Please provide an Ensembl release (e.g. --annotation_version 109).")
+            }
+
+            return mode_info
+        }
+
+    ch_run_gex = ch_mode_info.map { it.run_gex }
+    ch_run_dnam = ch_mode_info.map { it.run_dnam }
+    ch_use_precomputed_dnam = ch_mode_info.map { it.use_precomputed_dnam }
 
     ch_rows
         .flatMap { rows -> rows }
@@ -175,18 +183,13 @@ workflow PIPELINE_INITIALISATION {
         .set { ch_classes }
 
     // Create separate channel for DNAM using the full rows (same data as GEX, pre-filtered by CLASS_FILTER_AND_REPORT separately)
-    channel.value([parsed_rows])
-        .map { it -> it[0] }
+    ch_rows
         .set { ch_dnam_samplesheet }
 
     ch_dnam_beta_matrix = channel.empty()
     ch_dnam_pvals = channel.empty()
-
     ch_annotation_version = channel.value(params.annotation_version)
     ch_random_seed = channel.value(params.random_seed)
-    ch_run_gex = channel.value(mode_info.run_gex)
-    ch_run_dnam = channel.value(mode_info.run_dnam)
-    ch_use_precomputed_dnam = channel.value(mode_info.use_precomputed_dnam)
 
     emit:
     gex_samplesheet       = ch_gex_samplesheet

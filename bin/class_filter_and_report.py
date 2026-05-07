@@ -177,7 +177,7 @@ def main():
     filtered_df = df[keep_mask]
 
     # Save filtered samplesheet as TSV
-    filtered_df.to_csv('samplesheet.filtered.tsv', sep='\t', index=False)
+    filtered_df.to_csv('samplesheet.filtered.csv', sep=',', index=False)
 
     # Save kept sample IDs to a simple text file (one per line)
     with open('kept_sample_ids.txt', 'w') as f:

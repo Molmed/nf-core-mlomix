@@ -17,7 +17,7 @@ process CLASS_FILTER_AND_REPORT {
     path "classes.gex.filtered.tsv"           , emit: classes_gex_filtered
     path "classes.dnam.all.tsv"               , emit: classes_dnam_all
     path "classes.dnam.filtered.tsv"          , emit: classes_dnam_filtered
-    path "samplesheet.filtered.tsv"           , emit: samplesheet_filtered
+    path "samplesheet.filtered.csv"           , emit: samplesheet_filtered_csv
     path "kept_sample_ids.txt"                , emit: kept_sample_ids
     path "versions.yml"                       , emit: versions
 
@@ -41,7 +41,7 @@ process CLASS_FILTER_AND_REPORT {
     touch classes.gex.filtered.tsv
     touch classes.dnam.all.tsv
     touch classes.dnam.filtered.tsv
-    touch samplesheet.filtered.tsv
+    touch samplesheet.filtered.csv
     touch kept_sample_ids.txt
     echo "versions:" > versions.yml
     """
