@@ -211,7 +211,8 @@ workflow DNAM {
     ch_variance_input_betas = ch_missing_filtered_betas
     if (!skip_variance_filter) {
         FILTER_BY_VARIANCE (
-            ch_missing_filtered_betas
+            ch_missing_filtered_betas,
+            'dnam'
         )
         ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
         ch_variance_input_betas = FILTER_BY_VARIANCE.out.variance_filtered_betas

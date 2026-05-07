@@ -7,13 +7,14 @@ process FILTER_BY_VARIANCE {
 
     input:
     tuple val(dataset_name), val(sample_name), path(matrix)
+    val(modality)
 
     output:
-    tuple val(dataset_name), val(sample_name), path("${dataset_name}__${sample_name}.variance_filtered_betas.csv"), emit: variance_filtered_betas
-    path "${dataset_name}__${sample_name}.variance_distribution_before_filtering.png"  , emit: variance_plot_before_png
-    path "${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg"  , emit: variance_plot_before_svg
-    path "${dataset_name}__${sample_name}.variance_distribution_after_filtering.png"   , emit: variance_plot_after_png
-    path "${dataset_name}__${sample_name}.variance_distribution_after_filtering.svg"   , emit: variance_plot_after_svg
+    tuple val(dataset_name), val(sample_name), path("${modality}.${dataset_name}__${sample_name}.variance_filtered_betas.csv"), emit: variance_filtered_betas
+    path "${modality}.${dataset_name}__${sample_name}.variance_distribution_before_filtering.png"  , emit: variance_plot_before_png
+    path "${modality}.${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg"  , emit: variance_plot_before_svg
+    path "${modality}.${dataset_name}__${sample_name}.variance_distribution_after_filtering.png"   , emit: variance_plot_after_png
+    path "${modality}.${dataset_name}__${sample_name}.variance_distribution_after_filtering.svg"   , emit: variance_plot_after_svg
     path "versions.yml"                                                                , emit: versions
 
     when:
@@ -50,11 +51,11 @@ process FILTER_BY_VARIANCE {
         cli_args << args
     }
     def cli_args_block = cli_args.join(' \\\n        ')
-    def beta_output_name = "${dataset_name}__${sample_name}.variance_filtered_betas.csv"
-    def before_png_name = "${dataset_name}__${sample_name}.variance_distribution_before_filtering.png"
-    def before_svg_name = "${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg"
-    def after_png_name = "${dataset_name}__${sample_name}.variance_distribution_after_filtering.png"
-    def after_svg_name = "${dataset_name}__${sample_name}.variance_distribution_after_filtering.svg"
+    def beta_output_name = "${modality}.${dataset_name}__${sample_name}.variance_filtered_betas.csv"
+    def before_png_name = "${modality}.${dataset_name}__${sample_name}.variance_distribution_before_filtering.png"
+    def before_svg_name = "${modality}.${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg"
+    def after_png_name = "${modality}.${dataset_name}__${sample_name}.variance_distribution_after_filtering.png"
+    def after_svg_name = "${modality}.${dataset_name}__${sample_name}.variance_distribution_after_filtering.svg"
     """
     filter_by_variance.py \
         ${cli_args_block}
@@ -75,11 +76,11 @@ process FILTER_BY_VARIANCE {
 
     stub:
     """
-    touch ${dataset_name}__${sample_name}.variance_filtered_betas.csv
-    touch ${dataset_name}__${sample_name}.variance_distribution_before_filtering.png
-    touch ${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg
-    touch ${dataset_name}__${sample_name}.variance_distribution_after_filtering.png
-    touch ${dataset_name}__${sample_name}.variance_distribution_after_filtering.svg
+    touch ${modality}.${dataset_name}__${sample_name}.variance_filtered_betas.csv
+    touch ${modality}.${dataset_name}__${sample_name}.variance_distribution_before_filtering.png
+    touch ${modality}.${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg
+    touch ${modality}.${dataset_name}__${sample_name}.variance_distribution_after_filtering.png
+    touch ${modality}.${dataset_name}__${sample_name}.variance_distribution_after_filtering.svg
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

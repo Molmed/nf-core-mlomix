@@ -6,12 +6,12 @@
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { CONCATENATE_GEX        } from '../modules/local/gex/concatenate_gex'
-include { UMAP as UMAP_RAW_BY_BATCH  } from '../modules/local/umap/umap'
-include { UMAP as UMAP_BC_BY_BATCH   } from '../modules/local/umap/umap'
-include { UMAP as UMAP_NORM_BY_BATCH } from '../modules/local/umap/umap'
-include { UMAP as UMAP_RAW_BY_CLASS  } from '../modules/local/umap/umap'
-include { UMAP as UMAP_BC_BY_CLASS   } from '../modules/local/umap/umap'
-include { UMAP as UMAP_NORM_BY_CLASS } from '../modules/local/umap/umap'
+include { UMAP as UMAP_GEX_RAW_BY_BATCH  } from '../modules/local/umap/umap'
+include { UMAP as UMAP_GEX_BC_BY_BATCH   } from '../modules/local/umap/umap'
+include { UMAP as UMAP_GEX_NORM_BY_BATCH } from '../modules/local/umap/umap'
+include { UMAP as UMAP_GEX_RAW_BY_CLASS  } from '../modules/local/umap/umap'
+include { UMAP as UMAP_GEX_BC_BY_CLASS   } from '../modules/local/umap/umap'
+include { UMAP as UMAP_GEX_NORM_BY_CLASS } from '../modules/local/umap/umap'
 include { BATCH_CORRECT          } from '../modules/local/gex/batch_correct'
 include { FILTER_BY_VARIANCE     } from '../modules/local/filter_by_variance/main'
 include { FILTER_GENES           } from '../modules/local/gex/filter_genes/filter_genes'
@@ -57,25 +57,25 @@ workflow GEX {
     )
     ch_versions = ch_versions.mix(MERGE_DATASETS.out.versions)
 
-    UMAP_RAW_BY_BATCH (
-        "raw.by_batch",
+    UMAP_GEX_RAW_BY_BATCH (
+        "gex.raw.by_batch",
         MERGE_DATASETS.out.merged_csv,
         ch_batches,
         false,
         random_seed
     )
-    ch_versions = ch_versions.mix(UMAP_RAW_BY_BATCH.out.versions)
-    ch_visuals = ch_visuals.mix(UMAP_RAW_BY_BATCH.out.umap_svg)
+    ch_versions = ch_versions.mix(UMAP_GEX_RAW_BY_BATCH.out.versions)
+    ch_visuals = ch_visuals.mix(UMAP_GEX_RAW_BY_BATCH.out.umap_svg)
 
-    UMAP_RAW_BY_CLASS (
-        "raw.by_class",
+    UMAP_GEX_RAW_BY_CLASS (
+        "gex.raw.by_class",
         MERGE_DATASETS.out.merged_csv,
         ch_classes,
         false,
         random_seed
     )
-    ch_versions = ch_versions.mix(UMAP_RAW_BY_CLASS.out.versions)
-    ch_visuals = ch_visuals.mix(UMAP_RAW_BY_CLASS.out.umap_svg)
+    ch_versions = ch_versions.mix(UMAP_GEX_RAW_BY_CLASS.out.versions)
+    ch_visuals = ch_visuals.mix(UMAP_GEX_RAW_BY_CLASS.out.umap_svg)
 
     BATCH_CORRECT (
         MERGE_DATASETS.out.merged_csv,
@@ -84,25 +84,25 @@ workflow GEX {
     )
     ch_versions = ch_versions.mix(BATCH_CORRECT.out.versions)
 
-    UMAP_BC_BY_BATCH (
-        "batch_corrected.by_batch",
+    UMAP_GEX_BC_BY_BATCH (
+        "gex.batch_corrected.by_batch",
         BATCH_CORRECT.out.batch_corrected_csv,
         ch_batches,
         false,
         random_seed
     )
-    ch_versions = ch_versions.mix(UMAP_BC_BY_BATCH.out.versions)
-    ch_visuals = ch_visuals.mix(UMAP_BC_BY_BATCH.out.umap_svg)
+    ch_versions = ch_versions.mix(UMAP_GEX_BC_BY_BATCH.out.versions)
+    ch_visuals = ch_visuals.mix(UMAP_GEX_BC_BY_BATCH.out.umap_svg)
 
-    UMAP_BC_BY_CLASS (
-        "batch_corrected.by_class",
+    UMAP_GEX_BC_BY_CLASS (
+        "gex.batch_corrected.by_class",
         BATCH_CORRECT.out.batch_corrected_csv,
         ch_classes,
         false,
         random_seed
     )
-    ch_versions = ch_versions.mix(UMAP_BC_BY_CLASS.out.versions)
-    ch_visuals = ch_visuals.mix(UMAP_BC_BY_CLASS.out.umap_svg)
+    ch_versions = ch_versions.mix(UMAP_GEX_BC_BY_CLASS.out.versions)
+    ch_visuals = ch_visuals.mix(UMAP_GEX_BC_BY_CLASS.out.umap_svg)
 
     NORMALIZE (
         BATCH_CORRECT.out.batch_corrected_csv,
@@ -110,29 +110,30 @@ workflow GEX {
     )
     ch_versions = ch_versions.mix(NORMALIZE.out.versions)
 
-    UMAP_NORM_BY_BATCH (
-        "normalized.by_batch",
+    UMAP_GEX_NORM_BY_BATCH (
+        "gex.normalized.by_batch",
         NORMALIZE.out.normalized_csv,
         ch_batches,
         false,
         random_seed
     )
-    ch_versions = ch_versions.mix(UMAP_NORM_BY_BATCH.out.versions)
-    ch_visuals = ch_visuals.mix(UMAP_NORM_BY_BATCH.out.umap_svg)
+    ch_versions = ch_versions.mix(UMAP_GEX_NORM_BY_BATCH.out.versions)
+    ch_visuals = ch_visuals.mix(UMAP_GEX_NORM_BY_BATCH.out.umap_svg)
 
-    UMAP_NORM_BY_CLASS (
-        "normalized.by_class",
+    UMAP_GEX_NORM_BY_CLASS (
+        "gex.normalized.by_class",
         NORMALIZE.out.normalized_csv,
         ch_classes,
         false,
         random_seed
     )
-    ch_versions = ch_versions.mix(UMAP_NORM_BY_CLASS.out.versions)
-    ch_visuals = ch_visuals.mix(UMAP_NORM_BY_CLASS.out.umap_svg)
+    ch_versions = ch_versions.mix(UMAP_GEX_NORM_BY_CLASS.out.versions)
+    ch_visuals = ch_visuals.mix(UMAP_GEX_NORM_BY_CLASS.out.umap_svg)
 
     // Variance filtering on normalized GEX before transpose
     FILTER_BY_VARIANCE (
-        NORMALIZE.out.normalized_csv.map { f -> [ 'merged_datasets', 'merged_datasets', f ] }
+        NORMALIZE.out.normalized_csv.map { f -> [ 'merged_datasets', 'merged_datasets', f ] },
+        'gex'
     )
     ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
     ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_png)
