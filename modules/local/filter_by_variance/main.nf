@@ -11,9 +11,7 @@ process FILTER_BY_VARIANCE {
 
     output:
     tuple val(dataset_name), val(sample_name), path("${modality}.${dataset_name}__${sample_name}.variance_filtered_betas.csv"), emit: variance_filtered_betas
-    path "${modality}.${dataset_name}__${sample_name}.variance_distribution_before_filtering.png"  , emit: variance_plot_before_png
     path "${modality}.${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg"  , emit: variance_plot_before_svg
-    path "${modality}.${dataset_name}__${sample_name}.variance_distribution_after_filtering.png"   , emit: variance_plot_after_png
     path "${modality}.${dataset_name}__${sample_name}.variance_distribution_after_filtering.svg"   , emit: variance_plot_after_svg
     path "versions.yml"                                                                , emit: versions
 
@@ -52,18 +50,14 @@ process FILTER_BY_VARIANCE {
     }
     def cli_args_block = cli_args.join(' \\\n        ')
     def beta_output_name = "${modality}.${dataset_name}__${sample_name}.variance_filtered_betas.csv"
-    def before_png_name = "${modality}.${dataset_name}__${sample_name}.variance_distribution_before_filtering.png"
     def before_svg_name = "${modality}.${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg"
-    def after_png_name = "${modality}.${dataset_name}__${sample_name}.variance_distribution_after_filtering.png"
     def after_svg_name = "${modality}.${dataset_name}__${sample_name}.variance_distribution_after_filtering.svg"
     """
     filter_by_variance.py \
         ${cli_args_block}
 
     mv variance_filtered_betas.csv ${beta_output_name}
-    mv variance_distribution_before_filtering.png ${before_png_name}
     mv variance_distribution_before_filtering.svg ${before_svg_name}
-    mv variance_distribution_after_filtering.png ${after_png_name}
     mv variance_distribution_after_filtering.svg ${after_svg_name}
 
     cat <<-END_VERSIONS > versions.yml
@@ -77,9 +71,7 @@ process FILTER_BY_VARIANCE {
     stub:
     """
     touch ${modality}.${dataset_name}__${sample_name}.variance_filtered_betas.csv
-    touch ${modality}.${dataset_name}__${sample_name}.variance_distribution_before_filtering.png
     touch ${modality}.${dataset_name}__${sample_name}.variance_distribution_before_filtering.svg
-    touch ${modality}.${dataset_name}__${sample_name}.variance_distribution_after_filtering.png
     touch ${modality}.${dataset_name}__${sample_name}.variance_distribution_after_filtering.svg
 
     cat <<-END_VERSIONS > versions.yml

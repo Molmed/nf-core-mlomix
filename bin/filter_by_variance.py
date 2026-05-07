@@ -30,7 +30,7 @@ def plot_variance_distribution(
     output_prefix: str,
     threshold_label: str = "Threshold",
 ) -> None:
-    """Save histogram of feature variances as PNG and SVG."""
+    """Save histogram of feature variances as SVG."""
     plt.figure(figsize=(10, 6))
     plt.hist(variances, bins=50, color="skyblue", edgecolor="black", alpha=0.7)
     plt.title(title)
@@ -48,7 +48,6 @@ def plot_variance_distribution(
         plt.legend(fontsize=12)
     plt.grid(axis="y", alpha=0.75)
     plt.tight_layout()
-    # plt.savefig(f"{output_prefix}.png", dpi=300)
     plt.savefig(f"{output_prefix}.svg", format="svg", dpi=300)
     plt.close()
 
@@ -208,7 +207,7 @@ def main() -> None:
     filtered_df.index.name = None
     filtered_df.to_csv(output_file, header=True)
     print(f"Saved variance-filtered beta values to {output_file}")
-    print("Saved variance distribution plots (before/after) as PNG and SVG")
+    print("Saved variance distribution plots (before/after) as SVG")
 
     print("\n=== Filtering complete ===")
 

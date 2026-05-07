@@ -217,9 +217,7 @@ workflow DNAM {
         ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
         ch_variance_input_betas = FILTER_BY_VARIANCE.out.variance_filtered_betas
 
-        ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_png)
         ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_svg)
-        ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_png)
         ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_svg)
     }
 

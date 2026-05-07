@@ -145,9 +145,7 @@ workflow GEX {
         'gex'
     )
     ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
-    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_png)
     ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_svg)
-    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_png)
     ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_svg)
 
     UMAP_GEX_PROCESSED_BY_BATCH (
