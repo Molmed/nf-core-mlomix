@@ -55,6 +55,12 @@
                     "fa_icon": "fas fa-book",
                     "help_text": "If using a reference genome configured in the pipeline using iGenomes, use this parameter to give the ID for the reference. This is then used to build the full paths for all required reference genome files e.g. `--genome GRCh38`. \n\nSee the [nf-core website docs](https://nf-co.re/usage/reference_genomes) for more details."
                 },
+                            "gex_intermediate_umaps": {
+                                "type": "boolean",
+                                "default": false,
+                                "description": "Generate UMAPs after batch_correct and normalize steps.",
+                                "fa_icon": "fas fa-image"
+                            },
                 "fasta": {
                     "type": "string",
                     "format": "file-path",
