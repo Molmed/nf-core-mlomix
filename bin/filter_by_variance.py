@@ -10,17 +10,17 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def read_beta_matrix(file_path: str) -> pd.DataFrame:
-    """Read beta matrix with header row (probe_id + sample columns)."""
-    beta_df = pd.read_csv(file_path, sep=",", header=0, index_col=0)
+def read_features_matrix(file_path: str) -> pd.DataFrame:
+    """Read feature matrix with header row (feature_id + sample columns)."""
+    features_df = pd.read_csv(file_path, sep=",", header=0, index_col=0)
 
-    if beta_df.shape[1] < 1:
+    if features_df.shape[1] < 1:
         raise ValueError(
-            "Expected at least 2 columns in beta file, got "
-            f"{beta_df.shape[1] + 1}"
+            "Expected at least 2 columns in feature file, got "
+            f"{features_df.shape[1] + 1}"
         )
 
-    return beta_df
+    return features_df
 
 
 def plot_variance_distribution(
@@ -54,11 +54,11 @@ def plot_variance_distribution(
 
 
 def remove_low_variance_features(
-    beta_df: pd.DataFrame, variance_threshold: float
+    features_df: pd.DataFrame, variance_threshold: float
 ) -> pd.DataFrame:
     """Keep features (rows/probes) with variance > variance_threshold."""
-    print(f"Dataframe shape before filtering: {beta_df.shape}")
-    variances = beta_df.var(axis=1)
+    print(f"Dataframe shape before filtering: {features_df.shape}")
+    variances = features_df.var(axis=1)
 
     print("Variance statistics before filtering:")
     print(variances.describe())
@@ -81,7 +81,7 @@ def remove_low_variance_features(
         output_prefix="variance_distribution_before_filtering",
     )
 
-    filtered_df = beta_df.loc[variances > variance_threshold, :]
+    filtered_df = features_df.loc[variances > variance_threshold, :]
     print(f"Dataframe shape after filtering: {filtered_df.shape}")
 
     variances_after = filtered_df.var(axis=1)
@@ -99,11 +99,11 @@ def remove_low_variance_features(
 
 
 def keep_top_variance_features(
-    beta_df: pd.DataFrame, keep_top_sites: int
+    features_df: pd.DataFrame, keep_top_sites: int
 ) -> pd.DataFrame:
     """Keep the N rows/probes with highest variance."""
-    print(f"Dataframe shape before filtering: {beta_df.shape}")
-    variances = beta_df.var(axis=1)
+    print(f"Dataframe shape before filtering: {features_df.shape}")
+    variances = features_df.var(axis=1)
 
     print("Variance statistics before filtering:")
     print(variances.describe())
@@ -129,7 +129,7 @@ def keep_top_variance_features(
     )
 
     top_indices = variances.nlargest(sites_to_keep).index
-    filtered_df = beta_df.loc[top_indices, :]
+    filtered_df = features_df.loc[top_indices, :]
     print(f"Dataframe shape after filtering: {filtered_df.shape}")
 
     variances_after = filtered_df.var(axis=1)
@@ -152,7 +152,7 @@ def main() -> None:
         description="Remove low-variance features and plot distributions"
     )
     parser.add_argument(
-        "--betas", required=True, help="CSV file of beta values"
+        "--matrix", required=True, help="CSV file of feature values"
     )
     parser.add_argument(
         "--variance_threshold",
@@ -181,7 +181,7 @@ def main() -> None:
         raise ValueError("--keep_top_sites must be >= 1")
 
     print("=== Filter By Variance ===")
-    print(f"Beta values file: {args.betas}")
+    print(f"Feature matrix file: {args.matrix}")
     if args.keep_top_sites is not None:
         print(
             f"Keep top variance sites: {args.keep_top_sites} "
@@ -194,14 +194,14 @@ def main() -> None:
     os.makedirs(args.outdir, exist_ok=True)
     os.chdir(args.outdir)
 
-    beta_df = read_beta_matrix(args.betas)
-    print(f"Input matrix shape: {beta_df.shape}\n")
+    features_df = read_features_matrix(args.matrix)
+    print(f"Input matrix shape: {features_df.shape}\n")
 
     if args.keep_top_sites is not None:
-        filtered_df = keep_top_variance_features(beta_df, args.keep_top_sites)
+        filtered_df = keep_top_variance_features(features_df, args.keep_top_sites)
     else:
         filtered_df = remove_low_variance_features(
-            beta_df, args.variance_threshold
+            features_df, args.variance_threshold
         )
 
     output_file = "variance_filtered_betas.csv"

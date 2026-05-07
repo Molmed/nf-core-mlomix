@@ -1,0 +1,57 @@
+name: "filter_by_variance"
+description: Remove low-variance features and plot variance distributions
+keywords:
+  - expression
+  - filtering
+  - variance
+  - plotting
+tools:
+  - pandas:
+      description: Python data analysis library used for variance calculations and filtering.
+      homepage: https://pandas.pydata.org/
+      licence: ["BSD-3-Clause"]
+  - matplotlib:
+      description: Python plotting library used to generate variance distribution plots.
+      homepage: https://matplotlib.org/
+      licence: ["PSF"]
+
+input:
+  - - betas:
+        type: file
+        description: |
+          Comma-separated feature matrix where rows are features and columns are
+          samples; used for variance-based filtering.
+        pattern: "*.csv"
+
+output:
+  - variance_filtered_betas:
+      - "variance_filtered_betas.csv":
+          type: file
+          description: |
+            CSV after removing low-variance features.
+          pattern: "variance_filtered_betas.csv"
+  - variance_plot_before_png:
+      - "variance_distribution_before_filtering.png":
+          type: file
+          pattern: "variance_distribution_before_filtering.png"
+  - variance_plot_before_svg:
+      - "variance_distribution_before_filtering.svg":
+          type: file
+          pattern: "variance_distribution_before_filtering.svg"
+  - variance_plot_after_png:
+      - "variance_distribution_after_filtering.png":
+          type: file
+          pattern: "variance_distribution_after_filtering.png"
+  - variance_plot_after_svg:
+      - "variance_distribution_after_filtering.svg":
+          type: file
+          pattern: "variance_distribution_after_filtering.svg"
+  - versions:
+      - "versions.yml":
+          type: file
+          pattern: "versions.yml"
+
+authors:
+  - "@methylml"
+maintainers:
+  - "@methylml"

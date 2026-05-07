@@ -157,6 +157,12 @@
                     "description": "If set, keep only this many top-variance DNAM features and ignore dnam_variance_threshold.",
                     "fa_icon": "fas fa-sort-amount-down"
                 },
+                "gex_variance_keep_top_sites": {
+                    "type": ["integer", "null"],
+                    "default": null,
+                    "description": "If set, keep only this many top-variance GEX features.",
+                    "fa_icon": "fas fa-sort-amount-down"
+                },
                 "dnam_skip_filter_by_missing": {
                     "type": "boolean",
                     "default": false,

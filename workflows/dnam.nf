@@ -10,7 +10,7 @@ include { COMPRESS_DNAM          } from '../modules/local/dnam/compress_dnam/mai
 include { P_VAL_CORRECTION       } from '../modules/local/dnam/p_val_correction/main'
 include { FILTER_PROBES_BY_LIST  } from '../modules/local/dnam/filter_probes_by_list/main'
 include { FILTER_BY_MISSING      } from '../modules/local/dnam/filter_by_missing/main'
-include { FILTER_BY_VARIANCE     } from '../modules/local/dnam/filter_by_variance/main'
+include { FILTER_BY_VARIANCE     } from '../modules/local/filter_by_variance/main'
 include { UMAP as UMAP_DNAM_BY_CLASS } from '../modules/local/umap/umap'
 include { TRANSPOSE              } from '../modules/local/transpose'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'

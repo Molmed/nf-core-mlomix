@@ -13,6 +13,7 @@ include { UMAP as UMAP_RAW_BY_CLASS  } from '../modules/local/umap/umap'
 include { UMAP as UMAP_BC_BY_CLASS   } from '../modules/local/umap/umap'
 include { UMAP as UMAP_NORM_BY_CLASS } from '../modules/local/umap/umap'
 include { BATCH_CORRECT          } from '../modules/local/gex/batch_correct'
+include { FILTER_BY_VARIANCE     } from '../modules/local/filter_by_variance/main'
 include { FILTER_GENES           } from '../modules/local/gex/filter_genes/filter_genes'
 include { MERGE_DATASETS         } from '../modules/local/gex/merge_datasets'
 include { NORMALIZE              } from '../modules/local/gex/normalize'
@@ -109,6 +110,16 @@ workflow GEX {
     )
     ch_versions = ch_versions.mix(NORMALIZE.out.versions)
 
+    // Variance filtering on normalized GEX before transpose
+    FILTER_BY_VARIANCE (
+        NORMALIZE.out.normalized_csv.map { f -> [ 'merged_datasets', 'merged_datasets', f ] }
+    )
+    ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
+    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_png)
+    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_svg)
+    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_png)
+    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_svg)
+
     UMAP_NORM_BY_BATCH (
         "normalized.by_batch",
         NORMALIZE.out.normalized_csv,
@@ -130,7 +141,7 @@ workflow GEX {
     ch_visuals = ch_visuals.mix(UMAP_NORM_BY_CLASS.out.umap_svg)
 
     TRANSPOSE (
-        NORMALIZE.out.normalized_csv,
+        FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },
         "gex"
     )
     ch_versions = ch_versions.mix(TRANSPOSE.out.versions)
