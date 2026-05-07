@@ -48,7 +48,7 @@ def plot_variance_distribution(
         plt.legend(fontsize=12)
     plt.grid(axis="y", alpha=0.75)
     plt.tight_layout()
-    plt.savefig(f"{output_prefix}.png", dpi=300)
+    # plt.savefig(f"{output_prefix}.png", dpi=300)
     plt.savefig(f"{output_prefix}.svg", format="svg", dpi=300)
     plt.close()
 

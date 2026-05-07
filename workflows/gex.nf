@@ -50,7 +50,7 @@ workflow GEX {
     FILTER_GENES (
         CONCATENATE_GEX.out.dataset_name,
         CONCATENATE_GEX.out.concatenated_gex_csv,
-        params.gex_genes_file,
+        params.gex_genes_file ?: '',
         ch_annotations,
     )
     ch_versions = ch_versions.mix(FILTER_GENES.out.versions)

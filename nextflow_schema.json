@@ -191,13 +191,13 @@
                 },
                 "gex_min_samples_per_class": {
                     "type": "integer",
-                    "default": 3,
+                    "default": 5,
                     "description": "Minimum number of samples per class for GEX modality; classes with fewer samples are filtered out.",
                     "fa_icon": "fas fa-filter"
                 },
                 "dnam_min_samples_per_class": {
                     "type": "integer",
-                    "default": 3,
+                    "default": 5,
                     "description": "Minimum number of samples per class for DNAM modality; classes with fewer samples are filtered out.",
                     "fa_icon": "fas fa-filter"
                 },
