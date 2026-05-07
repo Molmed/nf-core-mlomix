@@ -10,6 +10,7 @@ process FILTER_GENES {
     input:
     val dataset_name
     path data_path
+    val genes_path
     each path(ref_path)
 
     output:
@@ -21,6 +22,7 @@ process FILTER_GENES {
 
     script:
     def gt_cache_dir = "${workDir}/gene_thesaurus_cache"
+    def genes_file = genes_path ?: ''
     """
     #!/usr/bin/env python3
 
@@ -31,6 +33,7 @@ process FILTER_GENES {
     def filter():
         data = pd.read_csv("${data_path}", index_col=0)
         ref = pd.read_csv("${ref_path}")
+        genes_file = "${genes_file}"
 
         # Use shared cache directory in Nextflow work dir
         cache_dir = "${gt_cache_dir}"
@@ -141,6 +144,12 @@ process FILTER_GENES {
 
         # Append the missing data to the data
         data = pd.concat([data, missing_data])
+
+        if genes_file:
+            with open(genes_file) as handle:
+                genes = [line.strip() for line in handle if line.strip()]
+
+            data = data.loc[data.index.isin(genes)]
 
         # Sort data by index
         data = data.sort_index()
