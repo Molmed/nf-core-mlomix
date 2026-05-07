@@ -1,6 +1,6 @@
 process FILTER_PROBES_BY_LIST {
     tag "filter_probes_by_list"
-    label 'process_medium'
+    label 'process_single'
 
     conda "${moduleDir}/environment.yml"
     container "biocontainers/pandas:1.5.3_cv1"

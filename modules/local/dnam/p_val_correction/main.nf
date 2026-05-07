@@ -1,6 +1,6 @@
 process P_VAL_CORRECTION {
     tag "p_val_correction"
-    label 'process_medium'
+    label 'process_single'
 
     conda "${moduleDir}/environment.yml"
     container "biocontainers/pandas:1.5.3_cv1"
