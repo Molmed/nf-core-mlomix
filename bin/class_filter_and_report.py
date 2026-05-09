@@ -176,14 +176,12 @@ def main():
 
     filtered_df = df[keep_mask]
 
+    # Sort by sample column to keep output consistent
+    if 'sample' in filtered_df.columns:
+        filtered_df = filtered_df.sort_values(by='sample')
+
     # Save filtered samplesheet as TSV
     filtered_df.to_csv('samplesheet.filtered.csv', sep=',', index=False)
-
-    # Save kept sample IDs to a simple text file (one per line)
-    with open('kept_sample_ids.txt', 'w') as f:
-        if 'sample' in filtered_df.columns:
-            for sid in filtered_df['sample'].tolist():
-                f.write(f"{sid}\n")
 
     # Create versions file
     import numpy

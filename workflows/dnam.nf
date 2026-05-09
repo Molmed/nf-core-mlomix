@@ -11,6 +11,7 @@ include { P_VAL_CORRECTION       } from '../modules/local/dnam/p_val_correction/
 include { FILTER_PROBES_BY_LIST  } from '../modules/local/dnam/filter_probes_by_list/main'
 include { FILTER_BY_MISSING      } from '../modules/local/dnam/filter_by_missing/main'
 include { FILTER_BY_VARIANCE     } from '../modules/local/filter_by_variance/main'
+include { IMPUTE                 } from '../modules/local/dnam/impute/main'
 include { UMAP as UMAP_DNAM_BY_CLASS } from '../modules/local/umap/umap'
 include { TRANSPOSE              } from '../modules/local/transpose'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -110,12 +111,23 @@ workflow DNAM {
 
     ch_pairs_with_pvals = ch_minfi_pairs.mix(ch_precomputed_pairs)
 
-    ch_betas_for_compression = ch_pairs_with_pvals
+    ch_betas_for_filtering = ch_pairs_with_pvals
         .map { dataset_name, sample_name, betas, _detection_pvals -> [dataset_name, sample_name, betas] }
         .mix(ch_precomputed_beta_only)
 
+    //
+    // MODULE: Filter DNAm betas per sample (common probes)
+    //
+    FILTER_PROBES_BY_LIST (
+        ch_betas_for_filtering,
+        ch_dnam_probe_list
+    )
+    ch_versions = ch_versions.mix(FILTER_PROBES_BY_LIST.out.versions)
+
+    ch_filtered_betas_for_compression = FILTER_PROBES_BY_LIST.out.filtered_betas
+
     COMPRESS_DNAM (
-        ch_betas_for_compression
+        ch_filtered_betas_for_compression
     )
     ch_versions = ch_versions.mix(COMPRESS_DNAM.out.versions)
 
@@ -152,16 +164,7 @@ workflow DNAM {
     ch_corrected_or_passthrough_betas = P_VAL_CORRECTION.out.corrected_betas
         .mix(ch_compressed_beta_only)
 
-    //
-    // MODULE: Filter DNAm betas per sample (common probes -> missingness -> variance)
-    //
-    FILTER_PROBES_BY_LIST (
-        ch_corrected_or_passthrough_betas,
-        ch_dnam_probe_list
-    )
-    ch_versions = ch_versions.mix(FILTER_PROBES_BY_LIST.out.versions)
-
-    ch_common_filtered_by_dataset = FILTER_PROBES_BY_LIST.out.filtered_betas
+    ch_common_filtered_by_dataset = ch_corrected_or_passthrough_betas
         .groupTuple()
         .map { dataset_name, sample_names, beta_paths ->
             // Sort by sample_name to ensure deterministic chunk order for caching
@@ -221,9 +224,16 @@ workflow DNAM {
         ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_svg)
     }
 
+    IMPUTE (
+        ch_variance_input_betas
+    )
+    ch_versions = ch_versions.mix(IMPUTE.out.versions)
+
+    ch_imputed_betas = IMPUTE.out.imputed_betas
+
     UMAP_DNAM_BY_CLASS (
         "dnam.by_class",
-        ch_variance_input_betas.map { _dataset_name, _sample_name, betas -> betas },
+        ch_imputed_betas.map { _dataset_name, _sample_name, betas -> betas },
         ch_classes,
         false,
         random_seed
@@ -232,7 +242,7 @@ workflow DNAM {
     ch_visuals = ch_visuals.mix(UMAP_DNAM_BY_CLASS.out.umap_svg)
 
     TRANSPOSE (
-        ch_variance_input_betas.map { _dataset_name, _sample_name, betas -> betas },
+        ch_imputed_betas.map { _dataset_name, _sample_name, betas -> betas },
         "dnam"
     )
     ch_versions = ch_versions.mix(TRANSPOSE.out.versions)
