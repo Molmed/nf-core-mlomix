@@ -1,6 +1,7 @@
 process FILTER_BY_VARIANCE {
     tag "filter_by_variance"
     label 'process_high'
+    cache 'lenient'
 
     conda "${moduleDir}/environment.yml"
     container "biocontainers/matplotlib:3.7.1"
