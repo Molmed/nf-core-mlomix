@@ -116,8 +116,6 @@ workflow MLOMIX {
     ch_dnam_transposed = DNAM.out.transposed_csv.ifEmpty(file("${params.outdir}/.dnam_placeholder"))
     ch_gex_transposed = ch_gex_transposed.ifEmpty(file("${params.outdir}/.gex_placeholder"))
     ch_visuals = ch_visuals.mix(DNAM.out.visuals)
-    ch_visuals = ch_visuals.mix(ch_class_plot_gex_filtered)
-    ch_visuals = ch_visuals.mix(ch_class_plot_dnam_filtered)
 
     FINALIZE (
         ch_classes_tsv,
