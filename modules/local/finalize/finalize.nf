@@ -1,5 +1,5 @@
 process FINALIZE {
-    label 'process_single'
+    label 'process_medium'
 
     conda "conda-forge::pandas=2.2.3"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -11,8 +11,11 @@ process FINALIZE {
     path dnam_transposed
     path gex_transposed
     path visual_files
+    path class_plot_gex_filtered
+    path class_plot_dnam_filtered
     path gex_classes_filtered
     path dnam_classes_filtered
+    path samplesheet_filtered_csv
 
     output:
     path "labels.csv", emit: labels_csv
@@ -20,6 +23,11 @@ process FINALIZE {
     path "features.gex.csv", emit: gex_features_csv
     path "feature_names.dnam.txt", emit: dnam_feature_names
     path "feature_names.gex.txt", emit: gex_feature_names
+    path "class_distribution.gex.filtered.svg", emit: class_distribution_gex_filtered_svg
+    path "class_distribution.dnam.filtered.svg", emit: class_distribution_dnam_filtered_svg
+    path "classes.gex.filtered.tsv", emit: classes_gex_filtered
+    path "classes.dnam.filtered.tsv", emit: classes_dnam_filtered
+    path "samplesheet.filtered.csv", emit: samplesheet_filtered_csv
     path "visuals", emit: visuals_dir
     path "class_names.gex.txt", emit: class_names_gex
     path "class_names.dnam.txt", emit: class_names_dnam
@@ -174,6 +182,11 @@ with open("versions.yml", "w") as f:
     touch features.gex.csv
     touch feature_names.dnam.txt
     touch feature_names.gex.txt
+    touch class_distribution.gex.filtered.svg
+    touch class_distribution.dnam.filtered.svg
+    touch classes.gex.filtered.tsv
+    touch classes.dnam.filtered.tsv
+    touch samplesheet.filtered.csv
     touch class_names.gex.txt
     touch class_names.dnam.txt
     mkdir -p visuals

@@ -47,8 +47,11 @@ workflow NFCORE_MLOMIX {
     ch_datasets
     ch_batches
     ch_classes
+    ch_class_plot_gex_filtered
+    ch_class_plot_dnam_filtered
     ch_classes_gex_filtered
     ch_classes_dnam_filtered
+    ch_samplesheet_filtered_csv
     ch_dnam_samplesheet
     ch_dnam_beta_matrix
     ch_dnam_pvals
@@ -69,8 +72,11 @@ workflow NFCORE_MLOMIX {
         ch_datasets,
         ch_batches,
         ch_classes,
+        ch_class_plot_gex_filtered,
+        ch_class_plot_dnam_filtered,
         ch_classes_gex_filtered,
         ch_classes_dnam_filtered,
+        ch_samplesheet_filtered_csv,
         ch_dnam_samplesheet,
         ch_dnam_beta_matrix,
         ch_dnam_pvals,
@@ -83,6 +89,11 @@ workflow NFCORE_MLOMIX {
     )
     emit:
     versions = MLOMIX.out.versions
+    classes_gex_filtered = MLOMIX.out.classes_gex_filtered
+    classes_dnam_filtered = MLOMIX.out.classes_dnam_filtered
+    samplesheet_filtered_csv = MLOMIX.out.samplesheet_filtered_csv
+    class_distribution_gex_filtered_svg = MLOMIX.out.class_distribution_gex_filtered_svg
+    class_distribution_dnam_filtered_svg = MLOMIX.out.class_distribution_dnam_filtered_svg
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

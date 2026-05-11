@@ -21,8 +21,11 @@ workflow MLOMIX {
     ch_datasets
     ch_batches
     ch_classes
+    ch_class_plot_gex_filtered
+    ch_class_plot_dnam_filtered
     ch_classes_gex_filtered
     ch_classes_dnam_filtered
+    ch_samplesheet_filtered_csv
     ch_dnam_samplesheet
     ch_dnam_beta_matrix
     ch_dnam_pvals
@@ -113,14 +116,19 @@ workflow MLOMIX {
     ch_dnam_transposed = DNAM.out.transposed_csv.ifEmpty(file("${params.outdir}/.dnam_placeholder"))
     ch_gex_transposed = ch_gex_transposed.ifEmpty(file("${params.outdir}/.gex_placeholder"))
     ch_visuals = ch_visuals.mix(DNAM.out.visuals)
+    ch_visuals = ch_visuals.mix(ch_class_plot_gex_filtered)
+    ch_visuals = ch_visuals.mix(ch_class_plot_dnam_filtered)
 
     FINALIZE (
         ch_classes_tsv,
         ch_dnam_transposed,
         ch_gex_transposed,
         ch_visuals.collect(),
+        ch_class_plot_gex_filtered,
+        ch_class_plot_dnam_filtered,
         ch_classes_gex_filtered,
-        ch_classes_dnam_filtered
+        ch_classes_dnam_filtered,
+        ch_samplesheet_filtered_csv
     )
     ch_versions = ch_versions.mix(FINALIZE.out.versions)
 
@@ -129,6 +137,11 @@ workflow MLOMIX {
     labels_csv = FINALIZE.out.labels_csv
     dnam_features_csv = FINALIZE.out.dnam_features_csv
     gex_features_csv = FINALIZE.out.gex_features_csv
+    classes_gex_filtered = FINALIZE.out.classes_gex_filtered
+    classes_dnam_filtered = FINALIZE.out.classes_dnam_filtered
+    samplesheet_filtered_csv = FINALIZE.out.samplesheet_filtered_csv
+    class_distribution_gex_filtered_svg = FINALIZE.out.class_distribution_gex_filtered_svg
+    class_distribution_dnam_filtered_svg = FINALIZE.out.class_distribution_dnam_filtered_svg
     visuals_dir = FINALIZE.out.visuals_dir
 
 }

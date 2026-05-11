@@ -103,6 +103,8 @@ workflow PIPELINE_INITIALISATION {
     ch_samplesheet_report = channel.fromPath(params.input, checkIfExists: true)
     CLASS_FILTER_AND_REPORT(ch_samplesheet_report)
     ch_versions = ch_versions.mix(CLASS_FILTER_AND_REPORT.out.versions)
+    ch_class_plot_gex_filtered = CLASS_FILTER_AND_REPORT.out.class_plot_gex_filtered
+    ch_class_plot_dnam_filtered = CLASS_FILTER_AND_REPORT.out.class_plot_dnam_filtered
     ch_classes_gex_filtered  = CLASS_FILTER_AND_REPORT.out.classes_gex_filtered
     ch_classes_dnam_filtered = CLASS_FILTER_AND_REPORT.out.classes_dnam_filtered
     ch_filtered_samplesheet_csv = CLASS_FILTER_AND_REPORT.out.samplesheet_filtered_csv
@@ -206,6 +208,9 @@ workflow PIPELINE_INITIALISATION {
     use_precomputed_dnam  = ch_use_precomputed_dnam
     classes_gex_filtered  = ch_classes_gex_filtered
     classes_dnam_filtered = ch_classes_dnam_filtered
+    class_plot_gex_filtered = ch_class_plot_gex_filtered
+    class_plot_dnam_filtered = ch_class_plot_dnam_filtered
+    samplesheet_filtered_csv = ch_filtered_samplesheet_csv
     versions              = ch_versions
 }
 
