@@ -190,7 +190,6 @@ workflow GEX {
     emit:
     versions       = ch_versions                 // channel: [ path(versions.yml) ]
     transposed_csv = TRANSPOSE.out.transposed_csv
-    classes_tsv    = ch_classes                  // channel: path(classes.tsv)
     visuals        = ch_visuals                  // channel: path(*.png|*.svg)
 }
 

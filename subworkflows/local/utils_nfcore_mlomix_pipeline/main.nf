@@ -170,13 +170,14 @@ workflow PIPELINE_INITIALISATION {
                      storeDir: "${params.outdir}/batch")
         .set { ch_batches }
 
-    ch_gex_samplesheet
-        .map { dataset -> dataset[1] }
-        .collect()
+    ch_rows
         .map { grouped_rows ->
-            def rows = grouped_rows.flatten()
+            def rows = grouped_rows ?: []
             def header = "sample\tclass"
-            def body = rows.collect { data -> "${data.id}\t${data['class'] ?: ''}" }.join('\n')
+            def body = rows.collect { data ->
+                def sample_name = data['sample'] ?: data['id']
+                "${sample_name}\t${data['class'] ?: ''}"
+            }.join('\n')
             "${header}\n${body}\n"
         }
         .collectFile(name: 'classes.tsv',

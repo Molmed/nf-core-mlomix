@@ -93,7 +93,7 @@ workflow MLOMIX {
     ch_versions = ch_versions.mix(GEX_REF_PREPROCESSOR.out.versions)
     ch_versions = ch_versions.mix(GEX.out.versions)
     ch_gex_transposed = GEX.out.transposed_csv
-    ch_classes_tsv = GEX.out.classes_tsv
+    ch_classes_tsv = ch_classes
     ch_visuals = ch_visuals.mix(GEX.out.visuals)
 
     // Pass ch_dnam_samplesheet directly without restructuring to preserve list integrity
