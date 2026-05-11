@@ -194,6 +194,7 @@ workflow DNAM {
 
     MERGE_DATASETS (
         CONCATENATE_DNAM.out.beta_matrix.collect()
+            .map { beta_matrices -> beta_matrices.sort { a, b -> a.name <=> b.name } }
     )
     ch_versions = ch_versions.mix(MERGE_DATASETS.out.versions)
 

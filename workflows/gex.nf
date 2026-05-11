@@ -57,6 +57,7 @@ workflow GEX {
 
     MERGE_DATASETS (
         FILTER_GENES.out.filtered_genes_csv.collect()
+            .map { filtered_genes_csvs -> filtered_genes_csvs.sort { a, b -> a.name <=> b.name } }
     )
     ch_versions = ch_versions.mix(MERGE_DATASETS.out.versions)
 
