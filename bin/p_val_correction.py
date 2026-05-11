@@ -57,6 +57,17 @@ def main():
         f"{pval_df.shape[1]} samples\n"
     )
 
+    # Some detection p-value files carry probe suffixes such as `_BC11` or
+    # `_TC11` that are not present in the beta matrix. Normalize those rownames
+    # to the base probe ID before alignment and collapse any duplicates.
+    normalized_pval_index = pval_df.index.str.replace(
+        r"_[A-Z0-9]+$", "", regex=True
+    )
+    if not normalized_pval_index.equals(pval_df.index):
+        pval_df = pval_df.copy()
+        pval_df.index = normalized_pval_index
+        pval_df = pval_df.groupby(level=0).max()
+
     if args.sample_name and beta_df.shape[1] == 1:
         beta_df = beta_df.copy()
         beta_df.columns = [args.sample_name]
@@ -66,8 +77,12 @@ def main():
         pval_df.columns = [args.sample_name]
 
     # Align matrices on shared probes and samples.
+    # First remove p-value probes that are not present in the beta matrix.
+    beta_probes = beta_df.index
+    pval_df = pval_df.loc[pval_df.index.isin(beta_probes)]
+
     # Preserve the beta-file probe order as the canonical output order.
-    common_probes = beta_df.index.intersection(pval_df.index)
+    common_probes = beta_probes.intersection(pval_df.index)
     common_samples = beta_df.columns.intersection(pval_df.columns)
 
     if (
