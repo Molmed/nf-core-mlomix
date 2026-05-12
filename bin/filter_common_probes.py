@@ -9,14 +9,16 @@ Filter common probes across methylation array platforms.
 
 import argparse
 import os
+import re
 
 import pandas as pd
 
 
 def normalize_probe_id(probe_id: str) -> str:
-    """Strip any suffix appended after the first underscore."""
+    """Strip any underscore suffix and trailing numeric version suffix."""
     if isinstance(probe_id, str):
-        return probe_id.split("_", 1)[0]
+        probe_id = probe_id.split("_", 1)[0]
+        return re.sub(r"\.\d+$", "", probe_id)
     return probe_id
 
 
