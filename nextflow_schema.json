@@ -209,13 +209,22 @@
                     "description": "Optional path to a file listing GEX class names to retain (one per line). If specified, overrides gex_min_samples_per_class.",
                     "fa_icon": "far fa-file-alt"
                 },
-                "dnam_class_file": {
+                "dnam_classes_file": {
                     "type": ["string", "null"],
                     "format": "file-path",
                     "exists": true,
                     "default": null,
                     "description": "Optional path to a file listing DNAM class names to retain (one per line). If specified, overrides dnam_min_samples_per_class.",
                     "fa_icon": "far fa-file-alt"
+                },
+                "dnam_class_file": {
+                    "type": ["string", "null"],
+                    "format": "file-path",
+                    "exists": true,
+                    "default": null,
+                    "description": "Deprecated alias for dnam_classes_file.",
+                    "fa_icon": "far fa-file-alt",
+                    "hidden": true
                 }
             }
         },
