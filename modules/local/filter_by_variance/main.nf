@@ -31,11 +31,11 @@ process FILTER_BY_VARIANCE {
         if (params.containsKey(ft + '_variance_threshold')) {
             variance_threshold_key = params[ft + '_variance_threshold']
         }
-        if (params.containsKey(ft + '_variance_keep_top_sites')) {
-            keep_top_sites_key = params[ft + '_variance_keep_top_sites']
+        if (params.containsKey(ft + '_variance_keep_top_genes')) {
+            keep_top_sites_key = params[ft + '_variance_keep_top_genes']
         }
-        if (params.containsKey(ft + '_variance_keep_top_sites') && params[ft + '_variance_keep_top_sites'] != null) {
-            keep_top_sites_key = params[ft + '_variance_keep_top_sites']
+        if (params.containsKey(ft + '_variance_keep_top_genes') && params[ft + '_variance_keep_top_genes'] != null) {
+            keep_top_sites_key = params[ft + '_variance_keep_top_genes']
         }
     }
 
