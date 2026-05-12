@@ -41,8 +41,10 @@ def main():
     parser.add_argument('samplesheet', help='Path to samplesheet file')
     parser.add_argument('--gex-min', type=int, default=3, help='Minimum samples per class for GEX')
     parser.add_argument('--dnam-min', type=int, default=3, help='Minimum samples per class for DNAM')
-    parser.add_argument('--gex-class-file', type=str, default=None, help='Optional file with GEX class names to retain (one per line)')
-    parser.add_argument('--dnam-class-file', type=str, default=None, help='Optional file with DNAM class names to retain (one per line)')
+    parser.add_argument('--gex-classes-file', type=str, default=None, help='Optional file with GEX class names to retain (one per line)')
+    parser.add_argument('--dnam-classes-file', type=str, default=None, help='Optional file with DNAM class names to retain (one per line)')
+    parser.add_argument('--gex-exclude-classes-file', type=str, default=None, help='Optional file with GEX class names to exclude (one per line). Overrides class file and min samples.')
+    parser.add_argument('--dnam-exclude-classes-file', type=str, default=None, help='Optional file with DNAM class names to exclude (one per line). Overrides class file and min samples.')
     args = parser.parse_args()
 
     # Auto-detect delimiter
@@ -60,8 +62,10 @@ def main():
 
     gex_min = args.gex_min
     dnam_min = args.dnam_min
-    gex_class_file = args.gex_class_file
-    dnam_class_file = args.dnam_class_file
+    gex_classes_file = args.gex_classes_file
+    dnam_classes_file = args.dnam_classes_file
+    gex_exclude_classes_file = args.gex_exclude_classes_file
+    dnam_exclude_classes_file = args.dnam_exclude_classes_file
 
     def read_class_file(class_file_path):
         """Read class names from file (one per line)."""
@@ -75,7 +79,7 @@ def main():
                     classes.append(line)
         return set(classes)
 
-    def handle_modality_all_and_filtered(mask, modality_label, tsv_all, svg_all, tsv_filtered, svg_filtered, min_samples, class_file=None):
+    def handle_modality_all_and_filtered(mask, modality_label, tsv_all, svg_all, tsv_filtered, svg_filtered, min_samples, class_file=None, exclude_classes=None):
         subdf = df[mask]
         if 'class' not in subdf.columns:
             print(f"WARNING: Samplesheet does not contain a 'class' column for {modality_label}. Generating empty reports.")
@@ -116,6 +120,15 @@ def main():
                 pd.DataFrame(columns=["class", "Count"]).to_csv(tsv_filtered, sep='\t', index=False)
                 return subdf, pd.DataFrame(columns=subdf.columns)
 
+        # Apply exclude filter if specified (overrides class_file and min_samples)
+        if exclude_classes is not None:
+            kept_classes = [c for c in kept_classes if c not in exclude_classes]
+            if len(kept_classes) == 0:
+                print(f"WARNING: All {modality_label} classes were excluded. Filtered report will be empty.")
+                plot_empty(f"All {modality_label} classes excluded", f"Class Distribution ({modality_label}) - Filtered", svg_filtered)
+                pd.DataFrame(columns=["class", "Count"]).to_csv(tsv_filtered, sep='\t', index=False)
+                return subdf, pd.DataFrame(columns=subdf.columns)
+
         filtered_subdf = subdf[subdf['class'].isin(kept_classes)]
         plot_class_distribution(filtered_subdf['class'], f"Class Distribution ({modality_label}) - Filtered", svg_filtered)
         vc_f = filtered_subdf['class'].value_counts().sort_values(ascending=False)
@@ -123,9 +136,10 @@ def main():
         return subdf, filtered_subdf
 
     # Handle GEX
-    gex_class_file_set = read_class_file(gex_class_file)
+    gex_classes_file_set = read_class_file(gex_classes_file)
+    gex_exclude_classes_set = read_class_file(gex_exclude_classes_file)
     if has_gex.any():
-        gex_all_df, gex_filtered_df = handle_modality_all_and_filtered(has_gex, 'GEX', 'classes.gex.all.tsv', 'class_distribution.gex.all.svg', 'classes.gex.filtered.tsv', 'class_distribution.gex.filtered.svg', gex_min, class_file=gex_class_file_set)
+        gex_all_df, gex_filtered_df = handle_modality_all_and_filtered(has_gex, 'GEX', 'classes.gex.all.tsv', 'class_distribution.gex.all.svg', 'classes.gex.filtered.tsv', 'class_distribution.gex.filtered.svg', gex_min, class_file=gex_classes_file_set, exclude_classes=gex_exclude_classes_set)
     else:
         plot_empty('No GEX samples found', 'Class Distribution (GEX) - All', 'class_distribution.gex.all.svg')
         plot_empty('No GEX samples found', 'Class Distribution (GEX) - Filtered', 'class_distribution.gex.filtered.svg')
@@ -135,9 +149,10 @@ def main():
         gex_filtered_df = pd.DataFrame(columns=df.columns)
 
     # Handle DNAM
-    dnam_class_file_set = read_class_file(dnam_class_file)
+    dnam_classes_file_set = read_class_file(dnam_classes_file)
+    dnam_exclude_classes_set = read_class_file(dnam_exclude_classes_file)
     if has_dnam.any():
-        dnam_all_df, dnam_filtered_df = handle_modality_all_and_filtered(has_dnam, 'DNAM', 'classes.dnam.all.tsv', 'class_distribution.dnam.all.svg', 'classes.dnam.filtered.tsv', 'class_distribution.dnam.filtered.svg', dnam_min, class_file=dnam_class_file_set)
+        dnam_all_df, dnam_filtered_df = handle_modality_all_and_filtered(has_dnam, 'DNAM', 'classes.dnam.all.tsv', 'class_distribution.dnam.all.svg', 'classes.dnam.filtered.tsv', 'class_distribution.dnam.filtered.svg', dnam_min, class_file=dnam_classes_file_set, exclude_classes=dnam_exclude_classes_set)
     else:
         plot_empty('No DNAM samples found', 'Class Distribution (DNAM) - All', 'class_distribution.dnam.all.svg')
         plot_empty('No DNAM samples found', 'Class Distribution (DNAM) - Filtered', 'class_distribution.dnam.filtered.svg')
