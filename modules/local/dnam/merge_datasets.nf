@@ -54,6 +54,10 @@ for input_path in inputs:
 if merged is None:
     raise ValueError("No data available after reading dataset beta matrices")
 
+# collapse duplicate probe IDs (take mean) if any remain after joining
+if merged.index.duplicated().any():
+    merged = merged.groupby(merged.index).mean()
+
 merged.index.name = None
 merged.to_csv("merged.beta_matrix.csv", header=True)
 

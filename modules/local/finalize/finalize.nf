@@ -48,6 +48,19 @@ import sys
 import os
 import shutil
 
+def ordered_columns(frame, feature_list_path):
+    if not feature_list_path or feature_list_path == 'null' or not os.path.exists(feature_list_path):
+        return frame
+
+    with open(feature_list_path) as handle:
+        feature_order = [line.strip().split('\t')[0] for line in handle if line.strip()]
+
+    ordered = [feature for feature in feature_order if feature in frame.columns]
+    if ordered:
+        return frame.loc[:, ordered]
+
+    return frame
+
 # Read labels (classes)
 labels = pd.read_csv("${classes_file}", sep="\t", index_col=0)
 labels = labels.iloc[:, 0]
@@ -61,6 +74,7 @@ labels.to_csv("labels.csv", sep=",")
 try:
     dnam = pd.read_csv("${dnam_transposed}", sep=",", index_col=0)
     dnam = dnam.loc[label_samples]
+    dnam = ordered_columns(dnam, "${params.dnam_probes_file ?: params.common_probes}")
     if not dnam.empty:
         dnam.to_csv("features.dnam.csv", sep=",")
     else:
@@ -72,6 +86,7 @@ except FileNotFoundError:
 try:
     gex = pd.read_csv("${gex_transposed}", sep=",", index_col=0)
     gex = gex.loc[label_samples]
+    gex = ordered_columns(gex, "${params.gex_genes_file ?: ''}")
     if not gex.empty:
         gex.to_csv("features.gex.csv", sep=",")
     else:
@@ -83,6 +98,7 @@ except FileNotFoundError:
 try:
     dnam = pd.read_csv("${dnam_transposed}", sep=",", index_col=0)
     dnam = dnam.loc[label_samples]
+    dnam = ordered_columns(dnam, "${params.dnam_probes_file ?: params.common_probes}")
     if not dnam.empty:
         with open("feature_names.dnam.txt", "w") as f:
             f.write("\\n".join(dnam.columns.tolist()))
@@ -95,6 +111,7 @@ except FileNotFoundError:
 try:
     gex = pd.read_csv("${gex_transposed}", sep=",", index_col=0)
     gex = gex.loc[label_samples]
+    gex = ordered_columns(gex, "${params.gex_genes_file ?: ''}")
     if not gex.empty:
         with open("feature_names.gex.txt", "w") as f:
             f.write("\\n".join(gex.columns.tolist()))
