@@ -209,6 +209,15 @@
                     "description": "Optional path to a file listing GEX class names to retain (one per line). If specified, overrides gex_min_samples_per_class.",
                     "fa_icon": "far fa-file-alt"
                 },
+                "gex_classes_file": {
+                    "type": ["string", "null"],
+                    "format": "file-path",
+                    "exists": true,
+                    "default": null,
+                    "description": "Deprecated alias for gex_class_file.",
+                    "fa_icon": "far fa-file-alt",
+                    "hidden": true
+                },
                 "dnam_classes_file": {
                     "type": ["string", "null"],
                     "format": "file-path",
