@@ -1,0 +1,11 @@
+name: tsne
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - scikit-learn=1.5.2
+  - pandas==2.2.3
+  - seaborn==0.13.2
+  - matplotlib==3.9.2
+  - glasbey==0.3.0

@@ -14,6 +14,14 @@ include { UMAP as UMAP_GEX_BC_BY_CLASS   } from '../modules/local/umap/umap'
 include { UMAP as UMAP_GEX_NORM_BY_CLASS } from '../modules/local/umap/umap'
 include { UMAP as UMAP_GEX_PROCESSED_BY_BATCH } from '../modules/local/umap/umap'
 include { UMAP as UMAP_GEX_PROCESSED_BY_CLASS } from '../modules/local/umap/umap'
+include { TSNE as TSNE_GEX_RAW_BY_BATCH  } from '../modules/local/tsne/tsne'
+include { TSNE as TSNE_GEX_BC_BY_BATCH   } from '../modules/local/tsne/tsne'
+include { TSNE as TSNE_GEX_NORM_BY_BATCH } from '../modules/local/tsne/tsne'
+include { TSNE as TSNE_GEX_RAW_BY_CLASS  } from '../modules/local/tsne/tsne'
+include { TSNE as TSNE_GEX_BC_BY_CLASS   } from '../modules/local/tsne/tsne'
+include { TSNE as TSNE_GEX_NORM_BY_CLASS } from '../modules/local/tsne/tsne'
+include { TSNE as TSNE_GEX_PROCESSED_BY_BATCH } from '../modules/local/tsne/tsne'
+include { TSNE as TSNE_GEX_PROCESSED_BY_CLASS } from '../modules/local/tsne/tsne'
 include { BATCH_CORRECT          } from '../modules/local/gex/batch_correct'
 include { FILTER_BY_VARIANCE     } from '../modules/local/filter_by_variance/main'
 include { FILTER_GENES           } from '../modules/local/gex/filter_genes/filter_genes'
@@ -62,25 +70,48 @@ workflow GEX {
     ch_versions = ch_versions.mix(MERGE_DATASETS.out.versions)
 
     if (params.gex_intermediate_umaps) {
-        UMAP_GEX_RAW_BY_BATCH (
-            "gex.raw.by_batch",
-            MERGE_DATASETS.out.merged_csv,
-            ch_batches,
-            false,
-            random_seed
-        )
-        ch_versions = ch_versions.mix(UMAP_GEX_RAW_BY_BATCH.out.versions)
-        ch_visuals = ch_visuals.mix(UMAP_GEX_RAW_BY_BATCH.out.umap_svg)
+        if (params.tsne) {
+            TSNE_GEX_RAW_BY_BATCH (
+                "gex.raw.by_batch",
+                MERGE_DATASETS.out.merged_csv,
+                ch_batches,
+                false,
+                random_seed
+            )
+            ch_versions = ch_versions.mix(TSNE_GEX_RAW_BY_BATCH.out.versions)
+            ch_visuals = ch_visuals.mix(TSNE_GEX_RAW_BY_BATCH.out.tsne_svg)
 
-        UMAP_GEX_RAW_BY_CLASS (
-            "gex.raw.by_class",
-            MERGE_DATASETS.out.merged_csv,
-            ch_classes,
-            false,
-            random_seed
-        )
-        ch_versions = ch_versions.mix(UMAP_GEX_RAW_BY_CLASS.out.versions)
-        ch_visuals = ch_visuals.mix(UMAP_GEX_RAW_BY_CLASS.out.umap_svg)
+            TSNE_GEX_RAW_BY_CLASS (
+                "gex.raw.by_class",
+                MERGE_DATASETS.out.merged_csv,
+                ch_classes,
+                false,
+                random_seed
+            )
+            ch_versions = ch_versions.mix(TSNE_GEX_RAW_BY_CLASS.out.versions)
+            ch_visuals = ch_visuals.mix(TSNE_GEX_RAW_BY_CLASS.out.tsne_svg)
+        }
+        else {
+            UMAP_GEX_RAW_BY_BATCH (
+                "gex.raw.by_batch",
+                MERGE_DATASETS.out.merged_csv,
+                ch_batches,
+                false,
+                random_seed
+            )
+            ch_versions = ch_versions.mix(UMAP_GEX_RAW_BY_BATCH.out.versions)
+            ch_visuals = ch_visuals.mix(UMAP_GEX_RAW_BY_BATCH.out.umap_svg)
+
+            UMAP_GEX_RAW_BY_CLASS (
+                "gex.raw.by_class",
+                MERGE_DATASETS.out.merged_csv,
+                ch_classes,
+                false,
+                random_seed
+            )
+            ch_versions = ch_versions.mix(UMAP_GEX_RAW_BY_CLASS.out.versions)
+            ch_visuals = ch_visuals.mix(UMAP_GEX_RAW_BY_CLASS.out.umap_svg)
+        }
     }
 
     BATCH_CORRECT (
@@ -91,25 +122,48 @@ workflow GEX {
     ch_versions = ch_versions.mix(BATCH_CORRECT.out.versions)
 
     if (params.gex_intermediate_umaps) {
-        UMAP_GEX_BC_BY_BATCH (
-            "gex.batch_corrected.by_batch",
-            BATCH_CORRECT.out.batch_corrected_csv,
-            ch_batches,
-            false,
-            random_seed
-        )
-        ch_versions = ch_versions.mix(UMAP_GEX_BC_BY_BATCH.out.versions)
-        ch_visuals = ch_visuals.mix(UMAP_GEX_BC_BY_BATCH.out.umap_svg)
+        if (params.tsne) {
+            TSNE_GEX_BC_BY_BATCH (
+                "gex.batch_corrected.by_batch",
+                BATCH_CORRECT.out.batch_corrected_csv,
+                ch_batches,
+                false,
+                random_seed
+            )
+            ch_versions = ch_versions.mix(TSNE_GEX_BC_BY_BATCH.out.versions)
+            ch_visuals = ch_visuals.mix(TSNE_GEX_BC_BY_BATCH.out.tsne_svg)
 
-        UMAP_GEX_BC_BY_CLASS (
-            "gex.batch_corrected.by_class",
-            BATCH_CORRECT.out.batch_corrected_csv,
-            ch_classes,
-            false,
-            random_seed
-        )
-        ch_versions = ch_versions.mix(UMAP_GEX_BC_BY_CLASS.out.versions)
-        ch_visuals = ch_visuals.mix(UMAP_GEX_BC_BY_CLASS.out.umap_svg)
+            TSNE_GEX_BC_BY_CLASS (
+                "gex.batch_corrected.by_class",
+                BATCH_CORRECT.out.batch_corrected_csv,
+                ch_classes,
+                false,
+                random_seed
+            )
+            ch_versions = ch_versions.mix(TSNE_GEX_BC_BY_CLASS.out.versions)
+            ch_visuals = ch_visuals.mix(TSNE_GEX_BC_BY_CLASS.out.tsne_svg)
+        }
+        else {
+            UMAP_GEX_BC_BY_BATCH (
+                "gex.batch_corrected.by_batch",
+                BATCH_CORRECT.out.batch_corrected_csv,
+                ch_batches,
+                false,
+                random_seed
+            )
+            ch_versions = ch_versions.mix(UMAP_GEX_BC_BY_BATCH.out.versions)
+            ch_visuals = ch_visuals.mix(UMAP_GEX_BC_BY_BATCH.out.umap_svg)
+
+            UMAP_GEX_BC_BY_CLASS (
+                "gex.batch_corrected.by_class",
+                BATCH_CORRECT.out.batch_corrected_csv,
+                ch_classes,
+                false,
+                random_seed
+            )
+            ch_versions = ch_versions.mix(UMAP_GEX_BC_BY_CLASS.out.versions)
+            ch_visuals = ch_visuals.mix(UMAP_GEX_BC_BY_CLASS.out.umap_svg)
+        }
     }
 
     NORMALIZE (
@@ -119,25 +173,48 @@ workflow GEX {
     ch_versions = ch_versions.mix(NORMALIZE.out.versions)
 
     if (params.gex_intermediate_umaps) {
-        UMAP_GEX_NORM_BY_BATCH (
-            "gex.normalized.by_batch",
-            NORMALIZE.out.normalized_csv,
-            ch_batches,
-            false,
-            random_seed
-        )
-        ch_versions = ch_versions.mix(UMAP_GEX_NORM_BY_BATCH.out.versions)
-        ch_visuals = ch_visuals.mix(UMAP_GEX_NORM_BY_BATCH.out.umap_svg)
+        if (params.tsne) {
+            TSNE_GEX_NORM_BY_BATCH (
+                "gex.normalized.by_batch",
+                NORMALIZE.out.normalized_csv,
+                ch_batches,
+                false,
+                random_seed
+            )
+            ch_versions = ch_versions.mix(TSNE_GEX_NORM_BY_BATCH.out.versions)
+            ch_visuals = ch_visuals.mix(TSNE_GEX_NORM_BY_BATCH.out.tsne_svg)
 
-        UMAP_GEX_NORM_BY_CLASS (
-            "gex.normalized.by_class",
-            NORMALIZE.out.normalized_csv,
-            ch_classes,
-            false,
-            random_seed
-        )
-        ch_versions = ch_versions.mix(UMAP_GEX_NORM_BY_CLASS.out.versions)
-        ch_visuals = ch_visuals.mix(UMAP_GEX_NORM_BY_CLASS.out.umap_svg)
+            TSNE_GEX_NORM_BY_CLASS (
+                "gex.normalized.by_class",
+                NORMALIZE.out.normalized_csv,
+                ch_classes,
+                false,
+                random_seed
+            )
+            ch_versions = ch_versions.mix(TSNE_GEX_NORM_BY_CLASS.out.versions)
+            ch_visuals = ch_visuals.mix(TSNE_GEX_NORM_BY_CLASS.out.tsne_svg)
+        }
+        else {
+            UMAP_GEX_NORM_BY_BATCH (
+                "gex.normalized.by_batch",
+                NORMALIZE.out.normalized_csv,
+                ch_batches,
+                false,
+                random_seed
+            )
+            ch_versions = ch_versions.mix(UMAP_GEX_NORM_BY_BATCH.out.versions)
+            ch_visuals = ch_visuals.mix(UMAP_GEX_NORM_BY_BATCH.out.umap_svg)
+
+            UMAP_GEX_NORM_BY_CLASS (
+                "gex.normalized.by_class",
+                NORMALIZE.out.normalized_csv,
+                ch_classes,
+                false,
+                random_seed
+            )
+            ch_versions = ch_versions.mix(UMAP_GEX_NORM_BY_CLASS.out.versions)
+            ch_visuals = ch_visuals.mix(UMAP_GEX_NORM_BY_CLASS.out.umap_svg)
+        }
     }
 
     // Variance filtering on normalized GEX before transpose
@@ -149,25 +226,48 @@ workflow GEX {
     ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_svg)
     ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_svg)
 
-    UMAP_GEX_PROCESSED_BY_BATCH (
-        "gex.processed.by_batch",
-        FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },
-        ch_batches,
-        false,
-        random_seed
-    )
-    ch_versions = ch_versions.mix(UMAP_GEX_PROCESSED_BY_BATCH.out.versions)
-    ch_visuals = ch_visuals.mix(UMAP_GEX_PROCESSED_BY_BATCH.out.umap_svg)
+    if (params.tsne) {
+        TSNE_GEX_PROCESSED_BY_BATCH (
+            "gex.processed.by_batch",
+            FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },
+            ch_batches,
+            false,
+            random_seed
+        )
+        ch_versions = ch_versions.mix(TSNE_GEX_PROCESSED_BY_BATCH.out.versions)
+        ch_visuals = ch_visuals.mix(TSNE_GEX_PROCESSED_BY_BATCH.out.tsne_svg)
 
-    UMAP_GEX_PROCESSED_BY_CLASS (
-        "gex.processed.by_class",
-        FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },
-        ch_classes,
-        false,
-        random_seed
-    )
-    ch_versions = ch_versions.mix(UMAP_GEX_PROCESSED_BY_CLASS.out.versions)
-    ch_visuals = ch_visuals.mix(UMAP_GEX_PROCESSED_BY_CLASS.out.umap_svg)
+        TSNE_GEX_PROCESSED_BY_CLASS (
+            "gex.processed.by_class",
+            FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },
+            ch_classes,
+            false,
+            random_seed
+        )
+        ch_versions = ch_versions.mix(TSNE_GEX_PROCESSED_BY_CLASS.out.versions)
+        ch_visuals = ch_visuals.mix(TSNE_GEX_PROCESSED_BY_CLASS.out.tsne_svg)
+    }
+    else {
+        UMAP_GEX_PROCESSED_BY_BATCH (
+            "gex.processed.by_batch",
+            FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },
+            ch_batches,
+            false,
+            random_seed
+        )
+        ch_versions = ch_versions.mix(UMAP_GEX_PROCESSED_BY_BATCH.out.versions)
+        ch_visuals = ch_visuals.mix(UMAP_GEX_PROCESSED_BY_BATCH.out.umap_svg)
+
+        UMAP_GEX_PROCESSED_BY_CLASS (
+            "gex.processed.by_class",
+            FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },
+            ch_classes,
+            false,
+            random_seed
+        )
+        ch_versions = ch_versions.mix(UMAP_GEX_PROCESSED_BY_CLASS.out.versions)
+        ch_visuals = ch_visuals.mix(UMAP_GEX_PROCESSED_BY_CLASS.out.umap_svg)
+    }
 
     TRANSPOSE (
         FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },

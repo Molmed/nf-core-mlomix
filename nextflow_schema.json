@@ -124,6 +124,12 @@
                     "description": "Random seed used for reproducible dimensionality-reduction outputs.",
                     "fa_icon": "fas fa-dice"
                 },
+                "tsne": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Use t-SNE instead of UMAP for dimensionality reduction when available.",
+                    "fa_icon": "fas fa-image"
+                },
                 "common_probes": {
                     "type": "string",
                     "format": "file-path",

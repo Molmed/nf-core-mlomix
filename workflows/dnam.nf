@@ -13,6 +13,7 @@ include { FILTER_BY_MISSING      } from '../modules/local/dnam/filter_by_missing
 include { FILTER_BY_VARIANCE     } from '../modules/local/filter_by_variance/main'
 include { IMPUTE                 } from '../modules/local/dnam/impute/main'
 include { UMAP as UMAP_DNAM_BY_CLASS } from '../modules/local/umap/umap'
+include { TSNE as TSNE_DNAM_BY_CLASS } from '../modules/local/tsne/tsne'
 include { TRANSPOSE              } from '../modules/local/transpose'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 
@@ -232,15 +233,28 @@ workflow DNAM {
 
     ch_imputed_betas = IMPUTE.out.imputed_betas
 
-    UMAP_DNAM_BY_CLASS (
-        "dnam.by_class",
-        ch_imputed_betas.map { _dataset_name, _sample_name, betas -> betas },
-        ch_classes,
-        false,
-        random_seed
-    )
-    ch_versions = ch_versions.mix(UMAP_DNAM_BY_CLASS.out.versions)
-    ch_visuals = ch_visuals.mix(UMAP_DNAM_BY_CLASS.out.umap_svg)
+    if (params.tsne) {
+        TSNE_DNAM_BY_CLASS (
+            "dnam.by_class",
+            ch_imputed_betas.map { _dataset_name, _sample_name, betas -> betas },
+            ch_classes,
+            false,
+            random_seed
+        )
+        ch_versions = ch_versions.mix(TSNE_DNAM_BY_CLASS.out.versions)
+        ch_visuals = ch_visuals.mix(TSNE_DNAM_BY_CLASS.out.tsne_svg)
+    }
+    else {
+        UMAP_DNAM_BY_CLASS (
+            "dnam.by_class",
+            ch_imputed_betas.map { _dataset_name, _sample_name, betas -> betas },
+            ch_classes,
+            false,
+            random_seed
+        )
+        ch_versions = ch_versions.mix(UMAP_DNAM_BY_CLASS.out.versions)
+        ch_visuals = ch_visuals.mix(UMAP_DNAM_BY_CLASS.out.umap_svg)
+    }
 
     TRANSPOSE (
         ch_imputed_betas.map { _dataset_name, _sample_name, betas -> betas },
