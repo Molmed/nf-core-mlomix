@@ -130,6 +130,14 @@
                     "description": "Use t-SNE instead of UMAP for dimensionality reduction when available.",
                     "fa_icon": "fas fa-image"
                 },
+                "class_colors_file": {
+                    "type": ["string", "null"],
+                    "format": "file-path",
+                    "exists": true,
+                    "default": null,
+                    "description": "Optional headerless TSV mapping classes to hex colors (first column: class, second column: hex color).",
+                    "fa_icon": "far fa-file-alt"
+                },
                 "common_probes": {
                     "type": "string",
                     "format": "file-path",

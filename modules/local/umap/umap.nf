@@ -12,6 +12,7 @@ process UMAP {
     path features_path
     path labels_file
     val transformed
+    val class_colors_file
     val random_seed
 
     output:
@@ -94,7 +95,29 @@ process UMAP {
             data = data.fillna(0)
 
             palette = glasbey.create_palette(palette_size=len(labels.unique()))
-            colormap = dict(zip(labels.unique(), palette))
+            # If a class colors file is provided, read mappings (headerless TSV: class \t hex)
+            class_colors_path = "${class_colors_file}"
+            mapping = {}
+            if class_colors_path and class_colors_path != "":
+                try:
+                    if os.path.exists(class_colors_path):
+                        cc_df = pd.read_csv(class_colors_path, sep="\t", header=None, index_col=0)
+                        cc_df = cc_df.astype(str)
+                        mapping = dict(zip(cc_df.index.tolist(), cc_df.iloc[:, 0].tolist()))
+                except Exception:
+                    mapping = {}
+
+            # Build colormap using provided mappings when available, fallback to glasbey palette
+            colormap = {}
+            palette_iter = iter(palette)
+            for lbl in labels.unique():
+                if lbl in mapping and mapping[lbl]:
+                    colormap[lbl] = mapping[lbl]
+                else:
+                    try:
+                        colormap[lbl] = next(palette_iter)
+                    except StopIteration:
+                        colormap[lbl] = '#000000'
 
             # Normalize and scale the data
             scaler = StandardScaler()
