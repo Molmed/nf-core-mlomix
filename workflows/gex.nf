@@ -180,6 +180,8 @@ workflow GEX {
     )
     ch_versions = ch_versions.mix(NORMALIZE.out.versions)
 
+    def gex_processed_matrix
+
     if (params.gex_intermediate_umaps) {
         if (params.tsne) {
             TSNE_GEX_NORM_BY_BATCH (
@@ -230,18 +232,24 @@ workflow GEX {
     }
 
     // Variance filtering on normalized GEX before transpose
-    FILTER_BY_VARIANCE (
-        NORMALIZE.out.normalized_csv.map { f -> [ 'merged_datasets', 'merged_datasets', f ] },
-        'gex'
-    )
-    ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
-    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_svg)
-    ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_svg)
+    if (params.gex_genes_file) {
+        gex_processed_matrix = NORMALIZE.out.normalized_csv.map { f -> [ 'merged_datasets', 'merged_datasets', f ] }
+    }
+    else {
+        FILTER_BY_VARIANCE (
+            NORMALIZE.out.normalized_csv.map { f -> [ 'merged_datasets', 'merged_datasets', f ] },
+            'gex'
+        )
+        ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
+        ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_svg)
+        ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_svg)
+        gex_processed_matrix = FILTER_BY_VARIANCE.out.variance_filtered_betas
+    }
 
     if (params.tsne) {
         TSNE_GEX_PROCESSED_BY_BATCH (
             "gex.processed.by_batch",
-            FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },
+            gex_processed_matrix.map { _dataset_name, _sample_name, f -> f },
             ch_batches,
             false,
             params.class_colors_file ?: '',
@@ -252,7 +260,7 @@ workflow GEX {
 
         TSNE_GEX_PROCESSED_BY_CLASS (
             "gex.processed.by_class",
-            FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },
+            gex_processed_matrix.map { _dataset_name, _sample_name, f -> f },
             ch_classes,
             false,
             params.class_colors_file ?: '',
@@ -264,7 +272,7 @@ workflow GEX {
     else {
         UMAP_GEX_PROCESSED_BY_BATCH (
             "gex.processed.by_batch",
-            FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },
+            gex_processed_matrix.map { _dataset_name, _sample_name, f -> f },
             ch_batches,
             false,
             params.class_colors_file ?: '',
@@ -275,7 +283,7 @@ workflow GEX {
 
         UMAP_GEX_PROCESSED_BY_CLASS (
             "gex.processed.by_class",
-            FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },
+            gex_processed_matrix.map { _dataset_name, _sample_name, f -> f },
             ch_classes,
             false,
             params.class_colors_file ?: '',
@@ -286,7 +294,7 @@ workflow GEX {
     }
 
     TRANSPOSE (
-        FILTER_BY_VARIANCE.out.variance_filtered_betas.map { _dataset_name, _sample_name, f -> f },
+        gex_processed_matrix.map { _dataset_name, _sample_name, f -> f },
         "gex"
     )
     ch_versions = ch_versions.mix(TRANSPOSE.out.versions)
