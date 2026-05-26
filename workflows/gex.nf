@@ -49,6 +49,7 @@ workflow GEX {
 
     ch_versions = channel.empty()
     ch_visuals = channel.empty()
+    ch_norm_factors = channel.empty()
 
     CONCATENATE_GEX (
         ch_dataset
@@ -179,6 +180,7 @@ workflow GEX {
         ch_annotations
     )
     ch_versions = ch_versions.mix(NORMALIZE.out.versions)
+    ch_norm_factors = NORMALIZE.out.norm_factors_rds
 
     def gex_processed_matrix
 
@@ -314,6 +316,7 @@ workflow GEX {
     emit:
     versions       = ch_versions                 // channel: [ path(versions.yml) ]
     transposed_csv = TRANSPOSE.out.transposed_csv
+    norm_factors_rds = ch_norm_factors
     visuals        = ch_visuals                  // channel: path(*.png|*.svg)
 }
 

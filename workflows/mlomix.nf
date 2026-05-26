@@ -40,17 +40,18 @@ workflow MLOMIX {
 
     ch_versions = channel.empty()
     ch_gex_transposed = channel.empty()
+    ch_gex_norm_factors = channel.empty()
     ch_dnam_transposed = channel.empty()
     ch_classes_tsv = channel.empty()
     ch_visuals = channel.empty()
 
     ch_genome_for_gex = run_gex
-        .filter { flag -> flag }
-        .map { flag -> genome }
+        .filter { _flag -> _flag }
+        .map { _flag -> genome }
 
     ch_annotation_for_gex = run_gex
-        .filter { flag -> flag }
-        .map { flag -> annotation_version }
+        .filter { _flag -> _flag }
+        .map { _flag -> annotation_version }
 
     ch_gex_samplesheet_gated = ch_gex_samplesheet
         .combine(run_gex)
@@ -73,8 +74,8 @@ workflow MLOMIX {
         .map { item -> item[0] }
 
     ch_random_seed_gated = run_gex
-        .filter { flag -> flag }
-        .map { flag -> random_seed }
+        .filter { _flag -> _flag }
+        .map { _flag -> random_seed }
 
     GEX_REF_PREPROCESSOR (
         ch_genome_for_gex,
@@ -93,6 +94,7 @@ workflow MLOMIX {
     ch_versions = ch_versions.mix(GEX_REF_PREPROCESSOR.out.versions)
     ch_versions = ch_versions.mix(GEX.out.versions)
     ch_gex_transposed = GEX.out.transposed_csv
+    ch_gex_norm_factors = GEX.out.norm_factors_rds
     ch_classes_tsv = ch_classes
     ch_visuals = ch_visuals.mix(GEX.out.visuals)
 
@@ -115,12 +117,14 @@ workflow MLOMIX {
     ch_versions = ch_versions.mix(DNAM.out.versions)
     ch_dnam_transposed = DNAM.out.transposed_csv.ifEmpty(file("${params.outdir}/.dnam_placeholder"))
     ch_gex_transposed = ch_gex_transposed.ifEmpty(file("${params.outdir}/.gex_placeholder"))
+    ch_gex_norm_factors = ch_gex_norm_factors.ifEmpty(file("${params.outdir}/.gex_norm_factors_placeholder"))
     ch_visuals = ch_visuals.mix(DNAM.out.visuals)
 
     FINALIZE (
         ch_classes_tsv,
         ch_dnam_transposed,
         ch_gex_transposed,
+        ch_gex_norm_factors,
         ch_visuals.collect(),
         ch_class_plot_gex_filtered,
         ch_class_plot_dnam_filtered,
@@ -135,6 +139,7 @@ workflow MLOMIX {
     labels_csv = FINALIZE.out.labels_csv
     dnam_features_csv = FINALIZE.out.dnam_features_csv
     gex_features_csv = FINALIZE.out.gex_features_csv
+    gex_norm_factors_rds = FINALIZE.out.gex_norm_factors_rds
     classes_gex_filtered = FINALIZE.out.classes_gex_filtered
     classes_dnam_filtered = FINALIZE.out.classes_dnam_filtered
     samplesheet_filtered_csv = FINALIZE.out.samplesheet_filtered_csv

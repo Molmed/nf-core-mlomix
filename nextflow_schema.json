@@ -161,6 +161,14 @@
                     "description": "Optional path to a gene list with one gene name per line used to restrict the GEX dataset.",
                     "fa_icon": "far fa-file-alt"
                 },
+                "gex_norm_factors_file": {
+                    "type": ["string", "null"],
+                    "format": "file-path",
+                    "exists": true,
+                    "default": null,
+                    "description": "Optional path to an RDS file containing training normalization factors for GEX CPM calculation.",
+                    "fa_icon": "far fa-file-alt"
+                },
                 "dnam_missing_threshold": {
                     "type": "number",
                     "default": 0.1,

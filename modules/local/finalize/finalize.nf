@@ -10,6 +10,7 @@ process FINALIZE {
     path classes_file
     path dnam_transposed
     path gex_transposed
+    path gex_norm_factors_rds
     path visual_files
     path class_plot_gex_filtered
     path class_plot_dnam_filtered
@@ -23,6 +24,7 @@ process FINALIZE {
     path "features.gex.csv", emit: gex_features_csv
     path "feature_names.dnam.txt", emit: dnam_feature_names
     path "feature_names.gex.txt", emit: gex_feature_names
+    path "gex_norm_factors.rds", emit: gex_norm_factors_rds
     path "class_distribution.gex.filtered.svg", emit: class_distribution_gex_filtered_svg
     path "class_distribution.dnam.filtered.svg", emit: class_distribution_dnam_filtered_svg
     path "classes.gex.filtered.tsv", emit: classes_gex_filtered
@@ -120,6 +122,17 @@ try:
 except FileNotFoundError:
     open("feature_names.gex.txt", "w").close()
 
+try:
+    if '${gex_norm_factors_rds}' != 'null' and os.path.exists("${gex_norm_factors_rds}"):
+        src = os.path.abspath("${gex_norm_factors_rds}")
+        dst = os.path.abspath("gex_norm_factors.rds")
+        if src != dst:
+            shutil.copy2(src, dst)
+    else:
+        open('gex_norm_factors.rds', 'wb').close()
+except Exception:
+    open('gex_norm_factors.rds', 'wb').close()
+
 # Write filtered class names if provided (one per line)
 try:
     if '${gex_classes_filtered}' != 'null' and os.path.exists("${gex_classes_filtered}"):
@@ -199,6 +212,7 @@ with open("versions.yml", "w") as f:
     touch features.gex.csv
     touch feature_names.dnam.txt
     touch feature_names.gex.txt
+    touch gex_norm_factors.rds
     touch class_distribution.gex.filtered.svg
     touch class_distribution.dnam.filtered.svg
     touch classes.gex.filtered.tsv
