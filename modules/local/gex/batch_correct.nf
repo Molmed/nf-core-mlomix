@@ -48,9 +48,14 @@ process BATCH_CORRECT {
         }
         batch <- as.character(batch_df\$batch[ordered_idx])
 
-        # Do batch correction only when there is more than one combined batch
-        # and each combined batch has at least 2 samples in the matched expression set.
-        has_batch_variation <- length(unique(batch)) > 1 && all(table(batch) >= 2)
+        # ComBat_seq cannot handle singleton batches, so keep them unchanged
+        # and only correct the samples that belong to batches with >= 2 samples.
+        batch_counts <- table(batch)
+        singleton_batches <- names(batch_counts[batch_counts < 2])
+        singleton_mask <- batch %in% singleton_batches
+        corrected_mask <- !singleton_mask
+
+        has_batch_variation <- length(unique(batch[corrected_mask])) > 1
 
         if (!has_batch_variation) {
             write.csv(x, output_path)
@@ -89,8 +94,26 @@ process BATCH_CORRECT {
             }
         }
 
-        correcteddata <- ComBat_seq(counts = counts, batch=batch, group=group, full_mod=full_mod)
-        write.csv(correcteddata, output_path)
+        if (any(singleton_mask)) {
+            cat("Excluding", sum(singleton_mask), "samples from ComBat_seq because their batches are singletons.\n")
+        }
+
+        counts_for_correction <- counts[, corrected_mask, drop = FALSE]
+        batch_for_correction <- batch[corrected_mask]
+        group_for_correction <- if (is.null(group)) NULL else group[corrected_mask]
+
+        cat("Performing ComBat_seq batch correction with use_group =", use_group, "and full_mod =", full_mod, "\n")
+
+        correcteddata <- ComBat_seq(
+            counts = counts_for_correction,
+            batch = batch_for_correction,
+            group = group_for_correction,
+            full_mod = full_mod
+        )
+
+        output_counts <- counts
+        output_counts[, corrected_mask] <- correcteddata
+        write.csv(output_counts, output_path)
     }
 
     batches_df <- read.csv("${batches_file}", sep="\t", header=TRUE, stringsAsFactors=FALSE)
