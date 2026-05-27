@@ -36,6 +36,7 @@ process NORMALIZE {
         d <- DGEList(counts = x_length_norm)
 
         if (nzchar("${norm_factors_file}")) {
+            message(sprintf("NORMALIZE: Using provided gex norm factors file: %s", "${norm_factors_file}"))
             train_params <- readRDS("${norm_factors_file}")
 
             # Use the training norm factor median for all test samples.
@@ -45,6 +46,7 @@ process NORMALIZE {
             write.csv(CPM, output_path)
             saveRDS(train_params, factors_path)
         } else {
+            message("NORMALIZE: No gex_norm_factors_file provided; computing TMM normalization factors from current input")
             TMM <- calcNormFactors(d, method = "TMM")
             saveRDS(list(
                 norm_factors = TMM\$samples\$norm.factors,
