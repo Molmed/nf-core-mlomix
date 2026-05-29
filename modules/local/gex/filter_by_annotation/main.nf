@@ -1,20 +1,19 @@
-process FILTER_GENES {
+process FILTER_BY_ANNOTATION {
     label 'process_single'
     scratch true
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'oras://community.wave.seqera.io/library/pip_gene-thesaurus:587dd866009f8a59' :
+        'oras://community.wave.seqera.io/library/pip_gene-thesaurus:587dd8660098a59' :
         'community.wave.seqera.io/library/pip_gene-thesaurus:7c78bdcbd4b116b6' }"
 
     input:
     val dataset_name
     path data_path
-    val genes_path
     each path(ref_path)
 
     output:
-    path "${dataset_name}.filtered_genes.csv", emit: filtered_genes_csv
+    path "${dataset_name}.filtered_genes.csv", emit: filtered_annotation_csv
     path "versions.yml", emit: versions
 
     when:
@@ -22,7 +21,6 @@ process FILTER_GENES {
 
     script:
     def gt_cache_dir = "${workDir}/gene_thesaurus_cache"
-    def genes_file = genes_path ?: ''
     """
     #!/usr/bin/env python3
 
@@ -33,7 +31,6 @@ process FILTER_GENES {
     def filter():
         data = pd.read_csv("${data_path}", index_col=0)
         ref = pd.read_csv("${ref_path}")
-        genes_file = "${genes_file}"
 
         # Use shared cache directory in Nextflow work dir
         cache_dir = "${gt_cache_dir}"
@@ -144,12 +141,6 @@ process FILTER_GENES {
 
         # Append the missing data to the data
         data = pd.concat([data, missing_data])
-
-        if genes_file:
-            with open(genes_file) as handle:
-                genes = [line.strip() for line in handle if line.strip()]
-
-            data = data.loc[data.index.isin(genes)]
 
         # Sort data by index
         data = data.sort_index()

@@ -1,4 +1,4 @@
-name: filter_genes
+name: filter_by_annotation
 channels:
   - conda-forge
   - bioconda

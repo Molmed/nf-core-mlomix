@@ -23,8 +23,8 @@ include { TSNE as TSNE_GEX_NORM_BY_CLASS } from '../modules/local/tsne/tsne'
 include { TSNE as TSNE_GEX_PROCESSED_BY_BATCH } from '../modules/local/tsne/tsne'
 include { TSNE as TSNE_GEX_PROCESSED_BY_CLASS } from '../modules/local/tsne/tsne'
 include { BATCH_CORRECT          } from '../modules/local/gex/batch_correct'
-include { FILTER_BY_VARIANCE     } from '../modules/local/filter_by_variance/main'
-include { FILTER_GENES           } from '../modules/local/gex/filter_genes/filter_genes'
+include { FILTER_BY_ANNOTATION    } from '../modules/local/gex/filter_by_annotation/main'
+include { FILTER_BY_LIST          } from '../modules/local/gex/filter_by_list/filter_by_list'
 include { MERGE_DATASETS         } from '../modules/local/gex/merge_datasets'
 include { NORMALIZE              } from '../modules/local/gex/normalize'
 include { TRANSPOSE              } from '../modules/local/transpose'
@@ -56,16 +56,15 @@ workflow GEX {
     )
     ch_versions = ch_versions.mix(CONCATENATE_GEX.out.versions)
 
-    FILTER_GENES (
+    FILTER_BY_ANNOTATION (
         CONCATENATE_GEX.out.dataset_name,
         CONCATENATE_GEX.out.concatenated_gex_csv,
-        params.gex_genes_file ?: '',
         ch_annotations,
     )
-    ch_versions = ch_versions.mix(FILTER_GENES.out.versions)
+    ch_versions = ch_versions.mix(FILTER_BY_ANNOTATION.out.versions)
 
     MERGE_DATASETS (
-        FILTER_GENES.out.filtered_genes_csv.collect()
+        FILTER_BY_ANNOTATION.out.filtered_annotation_csv.collect()
             .map { filtered_genes_csvs -> filtered_genes_csvs.sort { a, b -> a.name <=> b.name } }
     )
     ch_versions = ch_versions.mix(MERGE_DATASETS.out.versions)
@@ -184,6 +183,19 @@ workflow GEX {
 
     def gex_processed_matrix
 
+    if (params.gex_genes_file) {
+        FILTER_BY_LIST (
+            "merged_datasets",
+            NORMALIZE.out.normalized_csv,
+            params.gex_genes_file
+        )
+        ch_versions = ch_versions.mix(FILTER_BY_LIST.out.versions)
+        gex_processed_matrix = FILTER_BY_LIST.out.filtered_by_list_csv.map { f -> [ 'merged_datasets', 'merged_datasets', f ] }
+    }
+    else {
+        gex_processed_matrix = NORMALIZE.out.normalized_csv.map { f -> [ 'merged_datasets', 'merged_datasets', f ] }
+    }
+
     if (params.gex_intermediate_umaps) {
         if (params.tsne) {
             TSNE_GEX_NORM_BY_BATCH (
@@ -231,21 +243,6 @@ workflow GEX {
             ch_versions = ch_versions.mix(UMAP_GEX_NORM_BY_CLASS.out.versions)
             ch_visuals = ch_visuals.mix(UMAP_GEX_NORM_BY_CLASS.out.umap_svg)
         }
-    }
-
-    // Variance filtering on normalized GEX before transpose
-    if (params.gex_genes_file) {
-        gex_processed_matrix = NORMALIZE.out.normalized_csv.map { f -> [ 'merged_datasets', 'merged_datasets', f ] }
-    }
-    else {
-        FILTER_BY_VARIANCE (
-            NORMALIZE.out.normalized_csv.map { f -> [ 'merged_datasets', 'merged_datasets', f ] },
-            'gex'
-        )
-        ch_versions = ch_versions.mix(FILTER_BY_VARIANCE.out.versions)
-        ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_before_svg)
-        ch_visuals = ch_visuals.mix(FILTER_BY_VARIANCE.out.variance_plot_after_svg)
-        gex_processed_matrix = FILTER_BY_VARIANCE.out.variance_filtered_betas
     }
 
     if (params.tsne) {
