@@ -63,63 +63,76 @@ def ordered_columns(frame, feature_list_path):
 
     return frame
 
+# Read DNAm and GEX transposed data (if provided)
+def read_transposed(path):
+    try:
+        return pd.read_csv(path, sep=",", index_col=0)
+    except FileNotFoundError:
+        return pd.DataFrame()
+    except pd.errors.EmptyDataError:
+        return pd.DataFrame()
+
+dnam = read_transposed("${dnam_transposed}")
+gex = read_transposed("${gex_transposed}")
+
 # Read labels (classes)
-labels = pd.read_csv("${classes_file}", sep="\t", index_col=0)
-labels = labels.iloc[:, 0]
-label_samples = labels.index.tolist()
+try:
+    labels_df = pd.read_csv("${classes_file}", sep="\t", index_col=0)
+    labels = labels_df.iloc[:, 0]
+except Exception:
+    labels = pd.Series(dtype=object)
+
+# Determine primary sample order: prefer DNAm, then GEX, then labels
+if not dnam.empty:
+    primary_samples = dnam.index.tolist()
+elif not gex.empty:
+    primary_samples = gex.index.tolist()
+else:
+    primary_samples = labels.index.tolist()
+
+# Reindex labels to match primary sample order, but keep all samples even if labels are missing
+labels = labels.reindex(primary_samples)
+
+# Final sample order follows the data when available, otherwise the labels
+final_samples = primary_samples if primary_samples else labels.index.tolist()
+
+# Subset/reorder dataframes to final sample order where possible
+if not dnam.empty:
+    dnam = dnam.loc[[s for s in final_samples if s in dnam.index]]
+    dnam = ordered_columns(dnam, "${params.dnam_probes_file ?: params.common_probes}")
+
+if not gex.empty:
+    gex = gex.loc[[s for s in final_samples if s in gex.index]]
+    gex = ordered_columns(gex, "${params.gex_genes_file ?: ''}")
 
 # Write labels as labels.csv with index renamed to "id"
 labels.index.name = "id"
 labels.to_csv("labels.csv", sep=",")
 
-# Read and reindex DNAM features (only if file provided and not empty)
-try:
-    dnam = pd.read_csv("${dnam_transposed}", sep=",", index_col=0)
-    dnam = dnam.loc[label_samples]
-    dnam = ordered_columns(dnam, "${params.dnam_probes_file ?: params.common_probes}")
-    if not dnam.empty:
-        dnam.to_csv("features.dnam.csv", sep=",")
-    else:
-        pd.DataFrame().to_csv("features.dnam.csv", sep=",")
-except FileNotFoundError:
-    pd.DataFrame().to_csv("features.dnam.csv", sep=",")  # Create empty file
+# Write DNAm features (preserve feature file order; samples now match labels)
+if not dnam.empty:
+    dnam.to_csv("features.dnam.csv", sep=",")
+else:
+    pd.DataFrame().to_csv("features.dnam.csv", sep=",")
 
-# Read and reindex GEX features (only if file provided and not empty)
-try:
-    gex = pd.read_csv("${gex_transposed}", sep=",", index_col=0)
-    gex = gex.loc[label_samples]
-    gex = ordered_columns(gex, "${params.gex_genes_file ?: ''}")
-    if not gex.empty:
-        gex.to_csv("features.gex.csv", sep=",")
-    else:
-        pd.DataFrame().to_csv("features.gex.csv", sep=",")
-except FileNotFoundError:
-    pd.DataFrame().to_csv("features.gex.csv", sep=",")  # Create empty file
+# Write GEX features (preserve feature file order; samples now match labels)
+if not gex.empty:
+    gex.to_csv("features.gex.csv", sep=",")
+else:
+    pd.DataFrame().to_csv("features.gex.csv", sep=",")
 
 # Write feature names for DNAM
-try:
-    dnam = pd.read_csv("${dnam_transposed}", sep=",", index_col=0)
-    dnam = dnam.loc[label_samples]
-    dnam = ordered_columns(dnam, "${params.dnam_probes_file ?: params.common_probes}")
-    if not dnam.empty:
-        with open("feature_names.dnam.txt", "w") as f:
-            f.write("\\n".join(dnam.columns.tolist()))
-    else:
-        open("feature_names.dnam.txt", "w").close()
-except FileNotFoundError:
+if not dnam.empty:
+    with open("feature_names.dnam.txt", "w") as f:
+        f.write("\\n".join(dnam.columns.tolist()))
+else:
     open("feature_names.dnam.txt", "w").close()
 
 # Write feature names for GEX
-try:
-    gex = pd.read_csv("${gex_transposed}", sep=",", index_col=0)
-    gex = gex.loc[label_samples]
-    gex = ordered_columns(gex, "${params.gex_genes_file ?: ''}")
-    if not gex.empty:
-        with open("feature_names.gex.txt", "w") as f:
-            f.write("\\n".join(gex.columns.tolist()))
-    else:
-        open("feature_names.gex.txt", "w").close()
-except FileNotFoundError:
+if not gex.empty:
+    with open("feature_names.gex.txt", "w") as f:
+        f.write("\\n".join(gex.columns.tolist()))
+else:
     open("feature_names.gex.txt", "w").close()
 
 try:
