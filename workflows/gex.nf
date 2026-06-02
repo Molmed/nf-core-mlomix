@@ -69,7 +69,7 @@ workflow GEX {
     )
     ch_versions = ch_versions.mix(MERGE_DATASETS.out.versions)
 
-    if (params.gex_intermediate_umaps) {
+    if (params.gex_intermediate_umaps && !params.skip_umaps) {
         if (params.tsne) {
             TSNE_GEX_RAW_BY_BATCH (
                 "gex.raw.by_batch",
@@ -125,7 +125,7 @@ workflow GEX {
     )
     ch_versions = ch_versions.mix(BATCH_CORRECT.out.versions)
 
-    if (params.gex_intermediate_umaps) {
+    if (params.gex_intermediate_umaps && !params.skip_umaps) {
         if (params.tsne) {
             TSNE_GEX_BC_BY_BATCH (
                 "gex.batch_corrected.by_batch",
@@ -196,7 +196,7 @@ workflow GEX {
         gex_processed_matrix = NORMALIZE.out.normalized_csv.map { f -> [ 'merged_datasets', 'merged_datasets', f ] }
     }
 
-    if (params.gex_intermediate_umaps) {
+    if (params.gex_intermediate_umaps && !params.skip_umaps) {
         if (params.tsne) {
             TSNE_GEX_NORM_BY_BATCH (
                 "gex.normalized.by_batch",
@@ -268,7 +268,7 @@ workflow GEX {
         ch_versions = ch_versions.mix(TSNE_GEX_PROCESSED_BY_CLASS.out.versions)
         ch_visuals = ch_visuals.mix(TSNE_GEX_PROCESSED_BY_CLASS.out.tsne_svg)
     }
-    else {
+    else if (!params.skip_umaps) {
         UMAP_GEX_PROCESSED_BY_BATCH (
             "gex.processed.by_batch",
             gex_processed_matrix.map { _dataset_name, _sample_name, f -> f },

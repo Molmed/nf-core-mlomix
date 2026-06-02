@@ -13,6 +13,7 @@ nextflow_pipeline {
                 run_gex = true
                 run_dnam = false
                 annotation_version = 'v107'
+                skip_umaps = true
             }
         }
 
@@ -70,6 +71,7 @@ nextflow_pipeline {
                 run_gex = false
                 run_dnam = true
                 use_precomputed_dnam = false
+                skip_umaps = true
             }
         }
 

@@ -245,7 +245,7 @@ workflow DNAM {
         ch_versions = ch_versions.mix(TSNE_DNAM_BY_CLASS.out.versions)
         ch_visuals = ch_visuals.mix(TSNE_DNAM_BY_CLASS.out.tsne_svg)
     }
-    else {
+    else if (!params.skip_umaps) {
         UMAP_DNAM_BY_CLASS (
             "dnam.by_class",
             ch_imputed_betas.map { _dataset_name, _sample_name, betas -> betas },

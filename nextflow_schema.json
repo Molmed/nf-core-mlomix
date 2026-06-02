@@ -61,6 +61,12 @@
                                 "description": "Generate UMAPs after batch_correct and normalize steps.",
                                 "fa_icon": "fas fa-image"
                             },
+                            "skip_umaps": {
+                                "type": "boolean",
+                                "default": false,
+                                "description": "Skip all UMAP generation throughout the workflow.",
+                                "fa_icon": "fas fa-ban"
+                            },
                 "fasta": {
                     "type": "string",
                     "format": "file-path",
