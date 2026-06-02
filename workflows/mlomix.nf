@@ -125,7 +125,7 @@ workflow MLOMIX {
         ch_dnam_transposed,
         ch_gex_transposed,
         ch_gex_norm_factors,
-        ch_visuals.collect(),
+        ch_visuals.toList(),
         ch_class_plot_gex_filtered,
         ch_class_plot_dnam_filtered,
         ch_classes_gex_filtered,
