@@ -39,8 +39,8 @@ process TSNE {
 
     import pandas as pd
     import numpy as np
-    import seaborn as sns
     import matplotlib.pyplot as plt
+    from matplotlib import colors as mcolors
     from sklearn.preprocessing import StandardScaler
     from sklearn.manifold import TSNE as SkTSNE
     import glasbey
@@ -143,14 +143,27 @@ process TSNE {
 
             # Plot t-SNE
             plt.figure(figsize=(10, 8))
-            sns.scatterplot(
-                x='tSNE1',
-                y='tSNE2',
-                hue='Label',
-                palette=colormap,
-                data=tsne_df,
-                s=50
-            )
+
+            def lighten_color(color, mix=0.35):
+                rgb = np.array(mcolors.to_rgb(color))
+                return mcolors.to_hex(rgb + (1.0 - rgb) * mix)
+
+            def darken_color(color, mix=0.35):
+                rgb = np.array(mcolors.to_rgb(color))
+                return mcolors.to_hex(rgb * (1.0 - mix))
+
+            for lbl in sorted_labels:
+                subset = tsne_df[tsne_df['Label'] == lbl]
+                dot_color = colormap[lbl]
+                plt.scatter(
+                    subset['tSNE1'],
+                    subset['tSNE2'],
+                    s=50,
+                    c=dot_color,
+                    edgecolors=darken_color(dot_color, 0.45),
+                    linewidths=0.8,
+                    label=lbl
+                )
             plt.title('t-SNE')
             plt.legend(title='Label', bbox_to_anchor=(1.05, 1), loc='upper left')
             plt.xlabel('tSNE1')
