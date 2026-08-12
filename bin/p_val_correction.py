@@ -46,8 +46,8 @@ def main():
     print(f"P-value threshold: {args.threshold}\n")
 
     # Read input files
-    beta_df = pd.read_csv(args.betas, sep="\t", index_col=0)
-    pval_df = pd.read_csv(args.pvals, sep="\t", index_col=0)
+    beta_df = pd.read_csv(args.betas, sep="\t", index_col=0, header=None)
+    pval_df = pd.read_csv(args.pvals, sep="\t", index_col=0, header=None)
 
     print(
         f"Beta matrix: {beta_df.shape[0]} probes x {beta_df.shape[1]} samples"
