@@ -124,6 +124,12 @@
                     "description": "Pass class labels to ComBat_seq for GEX batch correction. If false, set group to NULL and full_mod to FALSE in ComBat_seq.",
                     "fa_icon": "fas fa-layer-group"
                 },
+                "batch_correction": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Run GEX batch correction with ComBat_seq before normalization.",
+                    "fa_icon": "fas fa-layer-group"
+                },
                 "random_seed": {
                     "type": "integer",
                     "default": 42,

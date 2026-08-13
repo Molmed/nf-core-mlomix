@@ -50,6 +50,7 @@ workflow GEX {
     ch_versions = channel.empty()
     ch_visuals = channel.empty()
     ch_norm_factors = channel.empty()
+    def gex_matrix_for_normalization = null
 
     CONCATENATE_GEX (
         ch_dataset
@@ -68,6 +69,7 @@ workflow GEX {
             .map { filtered_genes_csvs -> filtered_genes_csvs.sort { a, b -> a.name <=> b.name } }
     )
     ch_versions = ch_versions.mix(MERGE_DATASETS.out.versions)
+    gex_matrix_for_normalization = MERGE_DATASETS.out.merged_csv
 
     if (params.gex_intermediate_umaps && !params.skip_umaps) {
         if (params.tsne) {
@@ -118,64 +120,67 @@ workflow GEX {
         }
     }
 
-    BATCH_CORRECT (
-        MERGE_DATASETS.out.merged_csv,
-        ch_batches,
-        ch_classes
-    )
-    ch_versions = ch_versions.mix(BATCH_CORRECT.out.versions)
+    if (params.batch_correction) {
+        BATCH_CORRECT (
+            MERGE_DATASETS.out.merged_csv,
+            ch_batches,
+            ch_classes
+        )
+        ch_versions = ch_versions.mix(BATCH_CORRECT.out.versions)
+        gex_matrix_for_normalization = BATCH_CORRECT.out.batch_corrected_csv
 
-    if (params.gex_intermediate_umaps && !params.skip_umaps) {
-        if (params.tsne) {
-            TSNE_GEX_BC_BY_BATCH (
-                "gex.batch_corrected.by_batch",
-                BATCH_CORRECT.out.batch_corrected_csv,
-                ch_batches,
-                false,
-                params.class_colors_file ?: '',
-                random_seed
-            )
-            ch_versions = ch_versions.mix(TSNE_GEX_BC_BY_BATCH.out.versions)
-            ch_visuals = ch_visuals.mix(TSNE_GEX_BC_BY_BATCH.out.tsne_svg)
+        if (params.gex_intermediate_umaps && !params.skip_umaps) {
+            if (params.tsne) {
+                TSNE_GEX_BC_BY_BATCH (
+                    "gex.batch_corrected.by_batch",
+                    BATCH_CORRECT.out.batch_corrected_csv,
+                    ch_batches,
+                    false,
+                    params.class_colors_file ?: '',
+                    random_seed
+                )
+                ch_versions = ch_versions.mix(TSNE_GEX_BC_BY_BATCH.out.versions)
+                ch_visuals = ch_visuals.mix(TSNE_GEX_BC_BY_BATCH.out.tsne_svg)
 
-            TSNE_GEX_BC_BY_CLASS (
-                "gex.batch_corrected.by_class",
-                BATCH_CORRECT.out.batch_corrected_csv,
-                ch_classes,
-                false,
-                params.class_colors_file ?: '',
-                random_seed
-            )
-            ch_versions = ch_versions.mix(TSNE_GEX_BC_BY_CLASS.out.versions)
-            ch_visuals = ch_visuals.mix(TSNE_GEX_BC_BY_CLASS.out.tsne_svg)
-        }
-        else {
-            UMAP_GEX_BC_BY_BATCH (
-                "gex.batch_corrected.by_batch",
-                BATCH_CORRECT.out.batch_corrected_csv,
-                ch_batches,
-                false,
-                params.class_colors_file ?: '',
-                random_seed
-            )
-            ch_versions = ch_versions.mix(UMAP_GEX_BC_BY_BATCH.out.versions)
-            ch_visuals = ch_visuals.mix(UMAP_GEX_BC_BY_BATCH.out.umap_svg)
+                TSNE_GEX_BC_BY_CLASS (
+                    "gex.batch_corrected.by_class",
+                    BATCH_CORRECT.out.batch_corrected_csv,
+                    ch_classes,
+                    false,
+                    params.class_colors_file ?: '',
+                    random_seed
+                )
+                ch_versions = ch_versions.mix(TSNE_GEX_BC_BY_CLASS.out.versions)
+                ch_visuals = ch_visuals.mix(TSNE_GEX_BC_BY_CLASS.out.tsne_svg)
+            }
+            else {
+                UMAP_GEX_BC_BY_BATCH (
+                    "gex.batch_corrected.by_batch",
+                    BATCH_CORRECT.out.batch_corrected_csv,
+                    ch_batches,
+                    false,
+                    params.class_colors_file ?: '',
+                    random_seed
+                )
+                ch_versions = ch_versions.mix(UMAP_GEX_BC_BY_BATCH.out.versions)
+                ch_visuals = ch_visuals.mix(UMAP_GEX_BC_BY_BATCH.out.umap_svg)
 
-            UMAP_GEX_BC_BY_CLASS (
-                "gex.batch_corrected.by_class",
-                BATCH_CORRECT.out.batch_corrected_csv,
-                ch_classes,
-                false,
-                params.class_colors_file ?: '',
-                random_seed
-            )
-            ch_versions = ch_versions.mix(UMAP_GEX_BC_BY_CLASS.out.versions)
-            ch_visuals = ch_visuals.mix(UMAP_GEX_BC_BY_CLASS.out.umap_svg)
+                UMAP_GEX_BC_BY_CLASS (
+                    "gex.batch_corrected.by_class",
+                    BATCH_CORRECT.out.batch_corrected_csv,
+                    ch_classes,
+                    false,
+                    params.class_colors_file ?: '',
+                    random_seed
+                )
+                ch_versions = ch_versions.mix(UMAP_GEX_BC_BY_CLASS.out.versions)
+                ch_visuals = ch_visuals.mix(UMAP_GEX_BC_BY_CLASS.out.umap_svg)
+            }
         }
     }
 
     NORMALIZE (
-        BATCH_CORRECT.out.batch_corrected_csv,
+        gex_matrix_for_normalization,
         ch_annotations
     )
     ch_versions = ch_versions.mix(NORMALIZE.out.versions)
