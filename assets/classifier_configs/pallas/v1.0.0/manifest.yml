@@ -1,0 +1,13 @@
+classifier:
+  name: pallas
+  version: 1.0.0
+
+genome: GRCh38
+annotation_version: 115
+
+gex_classes_file: class_names.gex.txt
+gex_genes_file: selected_features.gex.txt
+gex_norm_factors_file: norm_factors.gex.rds
+dnam_classes_file: class_names.dnam.txt
+dnam_probes_file: selected_features.dnam.txt
+class_colors_file: class_colors.tsv
