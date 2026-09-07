@@ -86,8 +86,9 @@ process TSNE {
             labels = labels.loc[data.index]
             data = data.dropna(axis=1, how='all')
 
-            if data.shape[0] < 2:
-                raise ValueError("Need at least 2 samples with non-missing values for t-SNE")
+            n_samples = data.shape[0]
+            if n_samples < 4:
+                raise ValueError("Need at least 4 samples with non-missing values for t-SNE")
             if data.shape[1] < 1:
                 raise ValueError("No usable features remain after removing all-missing columns")
 
@@ -123,9 +124,12 @@ process TSNE {
             scaler = StandardScaler()
             scaled_data = scaler.fit_transform(data)
 
+            # Adapt perplexity for small datasets while retaining the standard value for larger ones.
+            perplexity = (n_samples - 1) // 3 if n_samples < 100 else 30
+
             # Apply t-SNE for dimensionality reduction
             reducer = SkTSNE(n_components=2,
-                             perplexity=30,
+                             perplexity=perplexity,
                              learning_rate='auto',
                              init='pca',
                              random_state=${random_seed})

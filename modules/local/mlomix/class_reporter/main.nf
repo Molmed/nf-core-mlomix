@@ -28,8 +28,10 @@ process CLASS_FILTER_AND_REPORT {
     def gex_class_file = params.gex_class_file ?: params.gex_classes_file
     def gex_class_file_arg = gex_class_file ? "--gex-classes-file ${gex_class_file}" : ""
     def dnam_classes_file_arg = params.dnam_classes_file ? "--dnam-classes-file ${params.dnam_classes_file}" : ""
+    def gex_min_arg = params.gex_min_samples_per_class != null ? "--gex-min ${params.gex_min_samples_per_class}" : ""
+    def dnam_min_arg = params.dnam_min_samples_per_class != null ? "--dnam-min ${params.dnam_min_samples_per_class}" : ""
     """
-    python3 ${projectDir}/bin/class_filter_and_report.py ${samplesheet} --gex-min ${params.gex_min_samples_per_class} --dnam-min ${params.dnam_min_samples_per_class} ${gex_class_file_arg} ${dnam_classes_file_arg}
+    python3 ${projectDir}/bin/class_filter_and_report.py ${samplesheet} ${gex_min_arg} ${dnam_min_arg} ${gex_class_file_arg} ${dnam_classes_file_arg}
     """
 
     stub:

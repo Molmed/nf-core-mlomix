@@ -18,6 +18,87 @@ include { imNotification            } from '../../nf-core/utils_nfcore_pipeline'
 include { UTILS_NFCORE_PIPELINE     } from '../../nf-core/utils_nfcore_pipeline'
 include { UTILS_NEXTFLOW_PIPELINE   } from '../../nf-core/utils_nextflow_pipeline'
 
+def resolveClassifierConfigFile(manifest, configDir, key) {
+    def relativePath = manifest[key]?.toString()
+    if (!relativePath) {
+        return null
+    }
+
+    def resolvedPath = new File(configDir, relativePath).canonicalFile
+    if (!resolvedPath.path.startsWith(configDir.path + File.separator)) {
+        error("Classifier config file escapes classifier directory: ${key}")
+    }
+    if (!resolvedPath.isFile()) {
+        error("Classifier config file not found for '${key}': ${resolvedPath}")
+    }
+    return resolvedPath.path
+}
+
+def resolveClassifierConfig() {
+    if (!params.classifier_name && !params.classifier_version) {
+        return [
+            genome: params.genome,
+            annotation_version: params.annotation_version ?: 109,
+            gex_norm_factors_file: params.gex_norm_factors_file,
+            dnam_classes_file: params.dnam_classes_file,
+            class_colors_file: params.class_colors_file,
+        ]
+    }
+
+    if (!params.classifier_name || !params.classifier_version) {
+        error("Both --classifier-name and --classifier-version must be provided together.")
+    }
+
+    def classifierName = params.classifier_name.toString()
+    def classifierVersion = params.classifier_version.toString()
+    def safePathPart = /^[A-Za-z0-9_.-]+$/
+    if (!(classifierName ==~ safePathPart) || !(classifierVersion ==~ safePathPart)) {
+        error("Classifier name and version may contain only letters, numbers, '.', '_' and '-'.")
+    }
+
+    def classifierRoot = file(params.classifier_configs_dir).toFile().canonicalFile
+    def configDir = new File(classifierRoot, "${classifierName}/${classifierVersion}").canonicalFile
+    if (!configDir.isDirectory()) {
+        configDir = new File(classifierRoot, "${classifierName}/v${classifierVersion}").canonicalFile
+    }
+    if (!configDir.isDirectory()) {
+        error("Classifier configuration directory not found for ${classifierName} ${classifierVersion} under ${classifierRoot}")
+    }
+
+    def manifestPath = new File(configDir, 'manifest.yml')
+    if (!manifestPath.isFile()) {
+        error("Classifier manifest not found: ${manifestPath}")
+    }
+
+    def manifest = new org.yaml.snakeyaml.Yaml().load(manifestPath.text)
+    if (!(manifest instanceof Map) || !(manifest.classifier instanceof Map)) {
+        error("Classifier manifest is missing the 'classifier' section: ${manifestPath}")
+    }
+    if (manifest.classifier.name?.toString() != classifierName ||
+        manifest.classifier.version?.toString() != classifierVersion) {
+        error("Classifier manifest identity does not match its directory: ${manifestPath}")
+    }
+
+    def resolved = [
+        genome: params.genome ?: manifest['genome'],
+        annotation_version: params.annotation_version ?: manifest['annotation_version'] ?: 109,
+        gex_norm_factors_file: params.gex_norm_factors_file,
+        dnam_classes_file: params.dnam_classes_file,
+        class_colors_file: params.class_colors_file,
+    ]
+    if (!resolved.gex_norm_factors_file) {
+        resolved.gex_norm_factors_file = resolveClassifierConfigFile(manifest, configDir, 'gex_norm_factors_file')
+    }
+    if (!resolved.dnam_classes_file) {
+        resolved.dnam_classes_file = resolveClassifierConfigFile(manifest, configDir, 'dnam_classes_file')
+    }
+    if (!resolved.class_colors_file) {
+        resolved.class_colors_file = resolveClassifierConfigFile(manifest, configDir, 'class_colors_file')
+    }
+    log.info("Using classifier configuration ${classifierName} ${classifierVersion} (annotation_version=${resolved.annotation_version})")
+    return resolved
+}
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     SUBWORKFLOW TO INITIALISE PIPELINE
@@ -36,6 +117,7 @@ workflow PIPELINE_INITIALISATION {
     help              // boolean: Display help message and exit
     help_full         // boolean: Show the full help message
     show_hidden       // boolean: Show hidden parameters in the help message
+    classifier_config // map: Resolved classifier configuration
 
     main:
 
@@ -117,15 +199,17 @@ workflow PIPELINE_INITIALISATION {
         .collect()
 
     ch_mode_info = ch_rows
-        .map { filtered_rows -> validateInputSamplesheetModes(filtered_rows) }
+        .map { filtered_rows ->
+            validateInputSamplesheetModes(filtered_rows)
+        }
         .map { mode_info ->
             log.info "Parsed samplesheet modes: run_gex=${mode_info.run_gex}, run_dnam=${mode_info.run_dnam}, use_precomputed_dnam=${mode_info.use_precomputed_dnam}"
 
-            if (mode_info.run_gex && !params.genome) {
+            if (mode_info.run_gex && !classifier_config.genome) {
                 error("GEX input was detected but '--genome' is missing. Please provide a supported genome key (e.g. --genome GRCh38).")
             }
 
-            if (mode_info.run_gex && !params.annotation_version) {
+            if (mode_info.run_gex && !classifier_config.annotation_version) {
                 error("GEX input was detected but '--annotation_version' is missing. Please provide an Ensembl release (e.g. --annotation_version 109).")
             }
 
@@ -191,7 +275,8 @@ workflow PIPELINE_INITIALISATION {
 
     ch_dnam_beta_matrix = channel.empty()
     ch_dnam_pvals = channel.empty()
-    ch_annotation_version = channel.value(params.annotation_version)
+    ch_genome = channel.value(classifier_config.genome)
+    ch_annotation_version = channel.value(classifier_config.annotation_version)
     ch_random_seed = channel.value(params.random_seed)
 
     emit:
@@ -203,6 +288,7 @@ workflow PIPELINE_INITIALISATION {
     dnam_beta_matrix      = ch_dnam_beta_matrix
     dnam_pvals            = ch_dnam_pvals
     annotation_version    = ch_annotation_version
+    genome                = ch_genome
     random_seed           = ch_random_seed
     run_gex               = ch_run_gex
     run_dnam              = ch_run_dnam

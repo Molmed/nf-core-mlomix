@@ -19,6 +19,7 @@ include { MLOMIX  } from './workflows/mlomix'
 include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_mlomix_pipeline'
 include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_mlomix_pipeline'
 include { getGenomeAttribute      } from './subworkflows/local/utils_nfcore_mlomix_pipeline'
+include { resolveClassifierConfig } from './subworkflows/local/utils_nfcore_mlomix_pipeline'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,11 +27,9 @@ include { getGenomeAttribute      } from './subworkflows/local/utils_nfcore_mlom
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-// TODO nf-core: Remove this line if you don't need a FASTA file
-//   This is an example of how to use getGenomeAttribute() to fetch parameters
-//   from igenomes.config using `--genome`
+// Fetch the FASTA path from the selected iGenomes configuration.
 params.fasta = getGenomeAttribute('fasta')
-params.tsne = params.tsne ?: null
+params.tsne = params.tsne ?: true
 params.gex_norm_factors_file = params.gex_norm_factors_file ?: null
 
 /*
@@ -106,6 +105,13 @@ workflow NFCORE_MLOMIX {
 workflow {
 
     main:
+    classifier_config = resolveClassifierConfig()
+    classifier_config.each { key, value ->
+        if (value != null) {
+            params.put(key, value)
+        }
+    }
+
     //
     // SUBWORKFLOW: Run initialisation tasks
     //
@@ -118,7 +124,8 @@ workflow {
         params.input,
         params.help,
         params.help_full,
-        params.show_hidden
+        params.show_hidden,
+        classifier_config
     )
 
     //
@@ -137,8 +144,8 @@ workflow {
         PIPELINE_INITIALISATION.out.dnam_samplesheet,
         PIPELINE_INITIALISATION.out.dnam_beta_matrix,
         PIPELINE_INITIALISATION.out.dnam_pvals,
-        params.genome,
-        params.annotation_version,
+        PIPELINE_INITIALISATION.out.genome,
+        PIPELINE_INITIALISATION.out.annotation_version,
         params.random_seed,
         PIPELINE_INITIALISATION.out.run_gex,
         PIPELINE_INITIALISATION.out.run_dnam,

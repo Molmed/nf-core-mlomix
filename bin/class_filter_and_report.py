@@ -39,8 +39,8 @@ def plot_empty(message, title, outname):
 def main():
     parser = argparse.ArgumentParser(description='Filter samples by class and generate reports')
     parser.add_argument('samplesheet', help='Path to samplesheet file')
-    parser.add_argument('--gex-min', type=int, default=3, help='Minimum samples per class for GEX')
-    parser.add_argument('--dnam-min', type=int, default=3, help='Minimum samples per class for DNAM')
+    parser.add_argument('--gex-min', type=int, default=None, help='Minimum samples per class for GEX; omit to keep all classes')
+    parser.add_argument('--dnam-min', type=int, default=None, help='Minimum samples per class for DNAM; omit to keep all classes')
     parser.add_argument('--gex-classes-file', type=str, default=None, help='Optional file with GEX class names to retain (one per line)')
     parser.add_argument('--dnam-classes-file', type=str, default=None, help='Optional file with DNAM class names to retain (one per line)')
     parser.add_argument('--gex-exclude-classes-file', type=str, default=None, help='Optional file with GEX class names to exclude (one per line). Overrides class file and min samples.')
@@ -112,6 +112,8 @@ def main():
                 plot_empty(f"No {modality_label} classes from file found", f"Class Distribution ({modality_label}) - Filtered", svg_filtered)
                 pd.DataFrame(columns=["class", "Count"]).to_csv(tsv_filtered, sep='\t', index=False)
                 return subdf, pd.DataFrame(columns=subdf.columns)
+        elif min_samples is None:
+            kept_classes = vc_all.index.tolist()
         else:
             kept_classes = vc_all[vc_all >= min_samples].index.tolist()
             if len(kept_classes) == 0:

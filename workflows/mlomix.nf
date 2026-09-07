@@ -45,13 +45,15 @@ workflow MLOMIX {
     ch_classes_tsv = channel.empty()
     ch_visuals = channel.empty()
 
-    ch_genome_for_gex = run_gex
-        .filter { _flag -> _flag }
-        .map { _flag -> genome }
+    ch_genome_for_gex = genome
+        .combine(run_gex)
+        .filter { item -> item[1] }
+        .map { item -> item[0] }
 
-    ch_annotation_for_gex = run_gex
-        .filter { _flag -> _flag }
-        .map { _flag -> annotation_version }
+    ch_annotation_for_gex = annotation_version
+        .combine(run_gex)
+        .filter { item -> item[1] }
+        .map { item -> item[0] }
 
     ch_gex_samplesheet_gated = ch_gex_samplesheet
         .combine(run_gex)
