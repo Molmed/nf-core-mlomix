@@ -9,18 +9,21 @@
         "properties": {
             "sample": {
                 "type": "string",
+                "description": "Unique sample identifier, without spaces.",
                 "pattern": "^\\S+$",
                 "errorMessage": "Sample name must be provided and cannot contain spaces",
                 "meta": ["id"]
             },
             "dataset": {
                 "type": "string",
+                "description": "Unique dataset identifier, without spaces, e.g. sequencing run id, project identifier, etc.",
                 "pattern": "^\\S+$",
                 "errorMessage": "Dataset name must be provided and cannot contain spaces",
                 "meta": ["dataset"]
             },
             "batch": {
                 "type": "string",
+                "description": "Batch identifier, without spaces. Only required for model training with samples from multiple sequencing batches.",
                 "pattern": "^\\S+$",
                 "errorMessage": "Batch cannot contain spaces",
                 "meta": ["batch"],
@@ -28,16 +31,19 @@
             },
             "class": {
                 "type": "string",
+                "description": "Class/subtype label for the sample. Only required for model training or validation.",
                 "meta": ["class"],
                 "default": null
             },
             "data_silo": {
                 "type": "string",
+                "description": "Data silo identifier, e.g. 'train', 'test', 'validation'. Only used for model training.",
                 "meta": ["data_silo"],
                 "default": null
             },
             "gex_feature_counts_file": {
                 "type": "string",
+                "description": "Path to the gene expression feature counts file, if available for this sample. The file should be tab-delimited with the first column containing gene identifiers and the second column containing raw counts.",
                 "format": "file-path",
                 "exists": true,
                 "errorMessage": "gex_feature_counts_file must be a valid file path",
@@ -46,6 +52,7 @@
             },
             "dnam_beta_matrix_file": {
                 "type": "string",
+                "description": "Path to the DNA methylation beta matrix file, if available for this sample. The file should be tab-delimited with the first column containing probe identifiers and the second column containing beta values.",
                 "format": "file-path",
                 "exists": true,
                 "errorMessage": "dnam_beta_matrix_file must be a valid file path",
@@ -55,6 +62,7 @@
             "dnam_pvals_file": {
                 "type": "string",
                 "format": "file-path",
+                "description": "Path to the DNA methylation p-values file, if available for this sample. The file should be tab-delimited with the first column containing probe identifiers and the second column containing p-values.",
                 "exists": true,
                 "errorMessage": "dnam_pvals_file must be a valid file path",
                 "meta": ["dnam_pvals_file"],
@@ -62,12 +70,14 @@
             },
             "sentrix_id": {
                 "type": ["string", "integer"],
+                "description": "Sentrix ID, e.g. the ID of the array slide. Only required if processing raw DNA methylation data from Illumina arrays (IDAT).",
                 "errorMessage": "sentrix_id must be a string or integer",
                 "meta": ["sentrix_id"],
                 "default": null
             },
             "sentrix_position": {
                 "type": "string",
+                "description": "Sentrix position, e.g. the position of the array slide. Only required if processing raw DNA methylation data from Illumina arrays (IDAT).",
                 "pattern": "^\\S+$",
                 "errorMessage": "sentrix_position cannot contain spaces",
                 "meta": ["sentrix_position"],
@@ -75,6 +85,7 @@
             },
             "idats_basename": {
                 "type": "string",
+                "description": "Path to directory containing *_Red.idat and *_Grn.idat files. Only required if processing raw DNA methylation data from Illumina arrays (IDAT).",
                 "format": "directory-path",
                 "exists": true,
                 "errorMessage": "idats_basename must be a valid directory path",
