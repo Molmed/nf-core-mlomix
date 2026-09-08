@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/nf-core/mlomix/main/assets/schema_input.json",
-    "title": "nf-core/mlomix pipeline - params.input schema",
+    "$id": "https://github.com/Molmed/mlomix/main/assets/schema_input.json",
+    "title": "mlomix pipeline - params.input schema",
     "description": "Schema for the file provided with params.input",
     "type": "array",
     "items": {
